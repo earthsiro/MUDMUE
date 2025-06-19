@@ -33,5 +33,5 @@ export const routes = [
   // },
 ];
 export const routerConfigs = createBrowserRouter(routes, {
-  basename: "",
+  basename: "/mudmue-web",
 });
