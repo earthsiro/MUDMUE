@@ -8,6 +8,7 @@ import IconHide from "../../../assets/icon-hide.png";
 import IconUnhide from "../../../assets/icon-unhide.png";
 import { MudmueButton } from "../../../components/MudmueButton";
 import { Roulette } from "./components/Roulette";
+import { VSLabel } from "../components/VSLabel";
 import styled from "styled-components";
 import { useLoader } from "../../../components/Loader";
 
@@ -24,18 +25,6 @@ const MudmueMatchmakerPlayerContainer = styled.div`
     width: 100%;
     height: 200px;
     // height: 20%;
-`;
-const VLabel = styled.span`
-    color: var(--color-primary);
-    top: -4px;
-    left: 0;
-    position: absolute;
-`;
-const SLabel = styled.span`
-    color: var(--color-secondary);
-    bottom: -4px;
-    right: 0;
-    position: absolute;
 `;
 interface PlayerProps {
     id: number;
@@ -253,12 +242,7 @@ export const MudmueMatchmaker = () => {
                                             />
                                         ))}
                                 </div>
-
-                                <div className="font-noto font-bold text-[32px] relative w-10 h-12">
-                                    <VLabel>V</VLabel>
-                                    <SLabel>S</SLabel>
-                                </div>
-
+                                <VSLabel />
                                 <div className="flex gap-4 flex-col xl:flex-row relative">
                                     {Array(option.playerAmount - Math.floor(option.playerAmount / 2))
                                         .fill(null)
@@ -388,11 +372,7 @@ export const MudmueMatchmaker = () => {
                                             </div>
                                         ))}
                                 </div>
-                                <div className="font-noto font-bold text-[32px] relative w-10 h-12">
-                                    <VLabel>V</VLabel>
-                                    <SLabel>S</SLabel>
-                                </div>
-
+                                <VSLabel />
                                 <div className="flex flex-col items-start justify-start gap-4 xl:gap-8">
                                     {Array(option.playerAmount - Math.floor(option.playerAmount / 2))
                                         .fill(null)

@@ -46,9 +46,6 @@ export const MudmuePickPage = () => {
       <MudmuePickTitleContent>
         <div className="breadcrumbs text-sm">
           <ul>
-            {/* <li>
-              <a className="font-noto text-[24px]">MUDMUE Pick</a>
-            </li> */}
             {crumbs.map((crumb, idx) => (
               <li key={idx}>
                 <a className="font-noto text-[24px]" href={crumb.url}>
