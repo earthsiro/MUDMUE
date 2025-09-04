@@ -1,6 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import React from "react";
 import { TabMenu } from "./components/TabMenu";
 import styled from "styled-components";
 
