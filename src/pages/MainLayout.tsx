@@ -49,6 +49,7 @@ const MainLayoutHeader = styled.div`
 `;
 export const MainLayout = () => {
   const navigate = useNavigate();
+
   const handleClickMenu = (path: string) => {
     navigate(path);
     const drawerToggle = document.getElementById(
@@ -72,12 +73,12 @@ export const MainLayout = () => {
   // );
   return (
     <div className="drawer h-full w-full absolute drawer-end">
-      <input id="my-drawer" type="checkbox" className="drawer-toggle" />
+      <input id="my-drawer" type="checkbox" className="drawer-toggle"/>
 
       <div className="drawer-content flex flex-col h-full">
         {/* Header */}
         <MainLayoutHeader>
-          <img src={LogoMudmue} alt="logo-mudmue" width={88} height={88} />
+          <img src={LogoMudmue} alt="logo-mudmue" className="cursor-pointer" width={88} height={88} onClick={()=> navigate("/")} />
           {/* 👇 เปิด drawer ด้วย htmlFor */}
           <label htmlFor="my-drawer">
             <img
