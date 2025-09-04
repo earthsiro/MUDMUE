@@ -12,10 +12,21 @@ import { VSLabel } from "../components/VSLabel";
 import styled from "styled-components";
 import { useLoader } from "../../../components/Loader";
 
+const breakpoints = {
+    tablet: 900,
+    mobile: 600,
+};
 const MudmueMatchmakerContainer = styled.div`
     width: 100%;
     height: 100%;
     padding: 24px;
+
+    @media (max-width: ${breakpoints.tablet}px) {
+        padding: 8px;
+    }
+    @media (max-width: ${breakpoints.mobile}px) {
+        padding: 0px;
+    }
 `;
 const MudmueMatchmakerRouletteContainer = styled.div`
     width: 100%;
@@ -67,6 +78,13 @@ export const MudmueMatchmaker = () => {
             newValue = checked;
         } else if (type === "radio" || numberFields.includes(name)) {
             newValue = Number(value);
+            if (name === "playerAmount" && value === "4") {
+                setPlayers([
+                    ...players,
+                    { id: 2, name: "Player 3", hide: false },
+                    { id: 3, name: "Player 4", hide: false },
+                ]);
+            }
         } else {
             newValue = value;
         }
@@ -167,8 +185,8 @@ export const MudmueMatchmaker = () => {
             <MudmueMatchmakerRouletteContainer className="flex flex-col items-start justify-center h-[800px] mb-2 xl:flex-row xl:gap-6 xl:h-[456px] xl:mb-4">
                 <div className="card lg:card-side card-border bg-base-100 w-full shadow-lg card-bg">
                     <div className=" w-full flex flex-col items-start justify-start xl:flex-row">
-                        <div className="card lg:card-side card-border bg-base-100 w-96 h-full shadow-custom ">
-                            <div className="card-body">
+                        <div className="card lg:card-side card-border bg-base-100 w-96 h-full shadow-custom sm:w-full md:w-full sm:mb-2 md:mb-4">
+                            <div className="card-body sm:p-0 md:p-0">
                                 <div className="flex items-center justify-center gap-6 mb-6">
                                     <label className="mr-4 flex items-center justify-start gap-2">
                                         <input
@@ -225,7 +243,7 @@ export const MudmueMatchmaker = () => {
                         </div>
                         <div className="w-full h-full flex flex-col items-center justify-start">
                             <div className="flex items-center justify-center mb-6 gap-12">
-                                <div className="flex gap-4 flex-col xl:flex-row relative">
+                                <div className="flex gap-4 flex-row relative">
                                     {Array(Math.floor(option.playerAmount / 2))
                                         .fill(null)
                                         .map((_, idx) => (
@@ -243,7 +261,7 @@ export const MudmueMatchmaker = () => {
                                         ))}
                                 </div>
                                 <VSLabel />
-                                <div className="flex gap-4 flex-col xl:flex-row relative">
+                                <div className="flex gap-4 flex-row relative">
                                     {Array(option.playerAmount - Math.floor(option.playerAmount / 2))
                                         .fill(null)
                                         .map((_, idx) => (
@@ -342,7 +360,7 @@ export const MudmueMatchmaker = () => {
                 </div>
             </MudmueMatchmakerPlayerContainer>
             <dialog id="match_result" className="modal">
-                <div className={`modal-box w-8/12 max-w-5xl ${isShowResultModal ? "animate-fade-in" : ""}`}>
+                <div className={`modal-box w-10/12 lg:w-8/12 max-w-5xl ${isShowResultModal ? "animate-fade-in" : ""}`}>
                     <button
                         className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                         onClick={() => {
@@ -355,7 +373,7 @@ export const MudmueMatchmaker = () => {
                     {results.map((round) => (
                         <div key={round.id} className="flex flex-col items-center justify-center mb-4">
                             <div
-                                className="flex justify-center items-center flex-col xl:flex-row gap-12 mb-4"
+                                className="flex justify-center items-center flex-row gap-12 mb-4"
                                 key={round.id}
                             >
                                 <div className="flex flex-col items-start justify-start gap-4 xl:gap-8">

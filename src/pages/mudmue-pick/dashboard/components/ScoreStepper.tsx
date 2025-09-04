@@ -16,10 +16,11 @@ interface ScoreStepperProps {
     team: "blue" | "red";
     score: number;
     callback: (score: number) => void;
+    isDisplay?: boolean;
 }
 
 export const ScoreStepper = (props: ScoreStepperProps) => {
-    const { team = "blue", score = 0, callback = () => {} } = props;
+    const { team = "blue", score = 0, callback = () => {}, isDisplay = false } = props;
     const handleIncrement = () => {
         callback(score + 1);
     };
@@ -30,13 +31,17 @@ export const ScoreStepper = (props: ScoreStepperProps) => {
     };
     return (
         <ScoreStepperContainer>
-            <button className="btn btn-sm btn-square btn-circle btn-ghost right-2 top-2 " onClick={handleIncrement}>
-                <img src={team === "blue" ? IconPlusBlue : IconPlusRed} alt="plus-blue"></img>
-            </button>
+            {!isDisplay && (
+                <button className="btn btn-sm btn-square btn-circle btn-ghost right-2 top-2 " onClick={handleIncrement}>
+                    <img src={team === "blue" ? IconPlusBlue : IconPlusRed} alt="plus-blue"></img>
+                </button>
+            )}
             <div className="font-not text-[32px]">{score}</div>
-            <button className="btn btn-sm btn-square btn-circle btn-ghost right-2 top-2 " onClick={handleDecrement}>
-                <img src={team === "blue" ? IconMinusBlue : IconMinusRed} alt="plus-blue"></img>
-            </button>
+            {!isDisplay && (
+                <button className="btn btn-sm btn-square btn-circle btn-ghost right-2 top-2 " onClick={handleDecrement}>
+                    <img src={team === "blue" ? IconMinusBlue : IconMinusRed} alt="plus-blue"></img>
+                </button>
+            )}
         </ScoreStepperContainer>
     );
 };
