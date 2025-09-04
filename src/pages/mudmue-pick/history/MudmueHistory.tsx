@@ -1,5 +1,4 @@
 import MockData, { HistoryDataType, PlayerDataType } from "./mockDashboardData.ts";
-import React, { useState } from "react";
 
 import IconReplay from "../../../assets/icon-replay.png";
 import IconShuttleCockBlue from "../../../assets/icon-shuttlecock-blue.png";
@@ -7,6 +6,7 @@ import IconShuttleCockRed from "../../../assets/icon-shuttlecock-red.png";
 import { ScoreStepper } from "../dashboard/components/ScoreStepper.tsx";
 import { VSLabel } from "../components/VSLabel.tsx";
 import styled from "styled-components";
+import { useState } from "react";
 
 const breakpoints = {
     tablet: 900,
@@ -58,8 +58,8 @@ const ServiceSideRightIcon = styled.img`
 `;
 
 export const MudmueHistory = () => {
-    const [data, setData] = useState<HistoryDataType[]>(MockData);
-    const [currentEditData, setCurrentEditData] = useState<HistoryDataType[]>([]);
+    const [data] = useState<HistoryDataType[]>(MockData);
+    const [currentEditData] = useState<HistoryDataType[]>([]);
 
     const resolveIsEdit = (id: number) => currentEditData.some((m) => m.id === id);
     const matchToRender = (d: HistoryDataType) =>

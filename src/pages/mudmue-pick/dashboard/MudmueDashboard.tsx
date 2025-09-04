@@ -1,5 +1,4 @@
 import MockData, { DashboardDataType, PlayerDataType } from "./mockDashboardData.ts";
-import React, { useState } from "react";
 
 import IconComplete from "../../../assets/icon-flag.png";
 import IconShuttleCockBlue from "../../../assets/icon-shuttlecock-blue.png";
@@ -7,6 +6,7 @@ import IconShuttleCockRed from "../../../assets/icon-shuttlecock-red.png";
 import { ScoreStepper } from "./components/ScoreStepper.tsx";
 import { VSLabel } from "../components/VSLabel.tsx";
 import styled from "styled-components";
+import { useState } from "react";
 
 const breakpoints = {
     tablet: 900,
@@ -59,7 +59,7 @@ const ServiceSideRightIcon = styled.img`
 
 export const MudmueDashboard = () => {
     const [data, setData] = useState<DashboardDataType[]>(MockData);
-    const [currentEditData, setCurrentEditData] = useState<DashboardDataType[]>([]);
+    const [currentEditData] = useState<DashboardDataType[]>([]);
 
     const resolveIsEdit = (id: number) => currentEditData.some((m) => m.id === id);
     const matchToRender = (d: DashboardDataType) =>

@@ -2,7 +2,6 @@ import IconMinusBlue from "../../../../assets/icon-minus-blue.png";
 import IconMinusRed from "../../../../assets/icon-minus-red.png";
 import IconPlusBlue from "../../../../assets/icon-plus-blue.png";
 import IconPlusRed from "../../../../assets/icon-plus-red.png";
-import React from "react";
 import styled from "styled-components";
 
 const ScoreStepperContainer = styled.div`
