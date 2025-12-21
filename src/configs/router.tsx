@@ -5,6 +5,7 @@ import { MudmueDashboard } from "../pages/mudmue-pick/dashboard/MudmueDashboard"
 import { MudmueHistory } from "../pages/mudmue-pick/history/MudmueHistory";
 import { MudmueMatchmaker } from "../pages/mudmue-pick/matchmaker/MudmueMatchmaker";
 import { MudmuePickPage } from "../pages/mudmue-pick/MudmuePickPage";
+import { MudmueProfile } from "../pages/mudmue-pick/profile/MudmueProfile";
 import { StoryBookPage } from "../pages/StoryBookPage";
 import { createBrowserRouter } from "react-router-dom";
 
@@ -21,6 +22,7 @@ export const routes = [
           { path: "match-maker", element: <MudmueMatchmaker /> },
           { path: "history", element: <MudmueHistory /> },
           { path: "dashboard", element: <MudmueDashboard /> },
+          { path: "profile", element: <MudmueProfile /> },
         ],
       },
       { path: "leader-board", element: <LeaderBoardPage /> },
