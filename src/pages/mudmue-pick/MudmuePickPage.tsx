@@ -87,12 +87,14 @@ const breadcrumbMap: { [key: string]: string } = {
     "/pick/match-maker": "Matchmaker",
     "/pick/dashboard": "Dashboard",
     "/pick/history": "History",
+    "/pick/profile": "Profile",
 };
 
 const tabList = [
     { label: "Matchmaker", path: "match-maker" },
     { label: "Dashboard", path: "dashboard" },
     { label: "History", path: "history" },
+    { label: "Profile", path: "profile" },
 ];
 
 export const MudmuePickPage = () => {
