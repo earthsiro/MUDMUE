@@ -1,4 +1,12 @@
-import MockData, { HistoryDataType, PlayerDataType } from "./mockDashboardData.ts";
+import {
+    MatchDataType,
+    PlayerDataType,
+    createMatch,
+    loadMatchesWithFilter,
+    saveHistories,
+} from "../../../services/matchService.ts";
+import { getDetailProfile, getDetailProfileByField } from "../../../services/profileService.ts";
+import { useEffect, useState } from "react";
 
 import IconReplay from "../../../assets/icon-replay.png";
 import IconShuttleCockBlue from "../../../assets/icon-shuttlecock-blue.png";
@@ -6,7 +14,6 @@ import IconShuttleCockRed from "../../../assets/icon-shuttlecock-red.png";
 import { ScoreStepper } from "../dashboard/components/ScoreStepper.tsx";
 import { VSLabel } from "../components/VSLabel.tsx";
 import styled from "styled-components";
-import { useState } from "react";
 
 const breakpoints = {
     tablet: 900,
@@ -30,13 +37,13 @@ const DashboardContainer = styled.div`
     @media (max-width: ${breakpoints.mobile}px) {
         height: 100%;
         max-height: none;
-
     }
 `;
 const PlayerCardContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;
     gap: 64px;
     position: relative;
 `;
@@ -58,18 +65,29 @@ const ServiceSideRightIcon = styled.img`
 `;
 
 export const MudmueHistory = () => {
-    const [data] = useState<HistoryDataType[]>(MockData);
-    const [currentEditData] = useState<HistoryDataType[]>([]);
+    const [data, setData] = useState<MatchDataType[]>();
+    const [currentEditData] = useState<MatchDataType[]>([]);
 
     const resolveIsEdit = (id: number) => currentEditData.some((m) => m.id === id);
-    const matchToRender = (d: HistoryDataType) =>
-        resolveIsEdit(d.id) ? currentEditData.find((m) => m.id === d.id) : d;
+    const matchToRender = (d: MatchDataType) => (resolveIsEdit(d.id) ? currentEditData.find((m) => m.id === d.id) : d);
 
     const resolvePlayerLabelLeftSide = (players: PlayerDataType[]) => {
         return players.filter((player) => player.team === "red").sort((a, b) => a.position - b.position);
     };
     const resolvePlayerLabelRightSide = (players: PlayerDataType[]) => {
         return players.filter((player) => player.team === "blue").sort((a, b) => a.position - b.position);
+    };
+    const handleRematch = (oldMatch: MatchDataType) => {
+        const players = oldMatch.player.map((p, idx) => ({
+            ...p,
+            score: 0,
+            position: p.position ?? idx,
+        }));
+        const serviceSide = Math.random() < 0.5 ? "red" : "blue";
+        const newList = createMatch(players, serviceSide);
+        saveHistories(newList);
+        setData(loadMatchesWithFilter({ finished: true, orderBy: "updateDate", orderDirection: "desc" }));
+        alert("สร้างแมตช์ใหม่ใน Dashboard เรียบร้อยแล้ว!");
     };
 
     const resolveDisplayScoreIcon = (
@@ -95,9 +113,7 @@ export const MudmueHistory = () => {
         // ฝั่ง red เสิร์ฟตรงข้าม index
         return index !== shouldServeIndex;
     };
-    const handleReplayMatch = (id: number) => {
-        alert(`Replay match id: ${id}`);
-    }
+
     // const handleClickEdit = (id: number) => {
     //     const matchData = data.find((d) => d.id === id);
     //     if (matchData) {
@@ -116,26 +132,39 @@ export const MudmueHistory = () => {
     // const handleClickCancelEdit = (id: number) => {
     //     setCurrentEditData((prev) => prev.filter((m) => m.id !== id));
     // }; // NOTE : Phase 2 edit available
-
+    useEffect(() => {
+        setData(loadMatchesWithFilter({ finished: true, orderBy: "updateDate", orderDirection: "desc" }));
+    }, []);
     return (
         <DashboardContainer>
-            {data.map((d) => (
+            {data?.map((d) => (
                 <div key={d.id} className="w-full px-16">
-                    <div className="card w-full bg-base-100 shadow-lg sm:px-0 md:px-2">
+                    <div className="card w-full bg-base-100 shadow-lg sm:px-0 md:px-2 h-[182px]">
                         <PlayerCardContainer>
-                            <div className="flex flex-row justify-end items-center w-[200px] lg:w-[320px] gap-4 lg:justify-between">
+                            <div className="flex flex-row justify-end items-center w-[200px] lg:w-[360px] gap-4 lg:justify-between relative">
+                                {/* <TrophyLeftContainer mode={d.player.length === 2 ? "single" : "duo"}>
+                                    {d.winner === "red" && (
+                                        <>
+                                            <AnimatedTrophy src={IconTrophy}></AnimatedTrophy>
+                                        </>
+                                    )}
+                                </TrophyLeftContainer> */}
                                 {/* {d.player.length ? `${d.player.find((p) => p.team === "blue")!.score}` : "-"} */}
                                 {currentEditData.find((match) => match.id === d.id) ? (
                                     <div></div>
                                 ) : (
                                     <ScoreStepper
+                                        className="z-[1]"
                                         team="red"
-                                        score={d.player.find((p) => p.team === "red")!.score}
+                                        score={d.player.find((p: PlayerDataType) => p.team === "red")!.score}
                                         callback={() => {}}
+                                        showTrophy={d.winner === "red"}
                                         isDisplay
                                     />
                                 )}
-
+                                {/* <TrophyContainer>
+                                    {d.winner === "red" && <img src={IconTrophy}></img>}
+                                </TrophyContainer> */}
                                 <PlayerCardDisplay>
                                     {resolvePlayerLabelLeftSide(matchToRender(d)!.player).map(
                                         (p: PlayerDataType, index: number) => (
@@ -152,12 +181,19 @@ export const MudmueHistory = () => {
                                                 } border-[#0000ff]/20`}
                                             >
                                                 <div key={p.name} className="w-full font-noto text-[28px] text-right">
-                                                    {p.name}
+                                                    {getDetailProfile(p.uuid)?.displayName ? (
+                                                        <span>
+                                                            {getDetailProfileByField(p.uuid, "displayName")}&nbsp;
+                                                            <span className="text-[12px]">({p.name})</span>
+                                                        </span>
+                                                    ) : (
+                                                        p.name
+                                                    )}
                                                 </div>
                                                 {d.serviceSide === "red" &&
                                                     resolveDisplayScoreIcon(
                                                         d.player.length === 2 ? "single" : "duo",
-                                                        d.player.find((p) => p.team === "red")!.score,
+                                                        d.player.find((p: PlayerDataType) => p.team === "red")!.score,
                                                         index,
                                                         "red"
                                                     ) && (
@@ -193,7 +229,7 @@ export const MudmueHistory = () => {
                                                 {d.serviceSide === "blue" &&
                                                     resolveDisplayScoreIcon(
                                                         d.player.length === 2 ? "single" : "duo",
-                                                        d.player.find((p) => p.team === "blue")!.score,
+                                                        d.player.find((p: PlayerDataType) => p.team === "blue")!.score,
                                                         index,
                                                         "blue"
                                                     ) && (
@@ -205,23 +241,41 @@ export const MudmueHistory = () => {
                                                         ></ServiceSideRightIcon>
                                                     )}
                                                 <div key={p.name} className="w-full font-noto text-[28px] text-left">
-                                                    {p.name}
+                                                    {getDetailProfile(p.uuid)?.displayName ? (
+                                                        <span>
+                                                            {getDetailProfileByField(p.uuid, "displayName")}&nbsp;
+                                                            <span className="text-[12px]">({p.name})</span>
+                                                        </span>
+                                                    ) : (
+                                                        p.name
+                                                    )}
                                                 </div>
                                             </div>
                                         )
                                     )}
                                 </PlayerCardDisplay>
+                                {/* <TrophyContainer>
+                                    {d.winner === "blue" && <img src={IconTrophy}></img>}
+                                </TrophyContainer> */}
                                 {/* {d.player.length ? `${d.player.find((p) => p.team === "red")!.score}` : "-"} */}
                                 {currentEditData.find((match) => match.id === d.id) ? (
                                     <div></div>
                                 ) : (
                                     <ScoreStepper
                                         team="blue"
-                                        score={d.player.find((p) => p.team === "blue")!.score}
+                                        score={d.player.find((p: PlayerDataType) => p.team === "blue")!.score}
                                         callback={() => {}}
                                         isDisplay
+                                        showTrophy={d.winner === "blue"}
                                     />
                                 )}
+                                {/* <TrophyRightContainer mode={d.player.length === 2 ? "single" : "duo"}>
+                                    {d.winner === "blue" && (
+                                        <>
+                                            <AnimatedTrophy src={IconTrophy}></AnimatedTrophy>
+                                        </>
+                                    )}
+                                </TrophyRightContainer> */}
                             </div>
                             <div className="absolute bottom-2 right-2 h-full flex flex-col items-end gap-4">
                                 {/* {currentEditData.some((match) => match.id === d.id) ? (
@@ -262,7 +316,7 @@ export const MudmueHistory = () => {
                                     alt="replay-match"
                                     className="cursor-pointer"
                                     title="Replay Match"
-                                    onClick={()=> handleReplayMatch(d.id)}
+                                    onClick={() => handleRematch(d)}
                                     width={32}
                                     height={32}
                                 />
