@@ -12,7 +12,7 @@ import IconUnhide from "../../../assets/icon-unhide.png";
 import { MudmueButton } from "../../../components/MudmueButton";
 import { Roulette } from "./components/Roulette";
 import { VSLabel } from "../components/VSLabel";
-import { spinRoundsWithCarryOver } from "../../../helpers/spinhelp";
+import { spinRoundsWithCarryOver } from "../../../helpers/spinHelp";
 import styled from "styled-components";
 import { useLoader } from "../../../components/Loader";
 
@@ -162,7 +162,7 @@ export const MudmueMatchmaker = () => {
         const pool = players.filter((p) => !p.hide);
         // --- สุ่ม random ผลลัพธ์ n รอบ ด้วย recycle pool
         const groupList = spinRoundsWithCarryOver(pool, option.playerAmount, option.times);
-        const allResults: RoundResultMatchmakerProps[] = groupList.map((group, i) => ({
+        const allResults: RoundResultMatchmakerProps[] = groupList.map((group: PlayerProps[], i: number) => ({
             id: results.length + i + 1,
             players: group,
         }));
