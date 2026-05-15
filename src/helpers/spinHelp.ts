@@ -1,4 +1,4 @@
-import { PlayerProps } from "../pages/mudmue-pick/matchmaker/MudmueMatchmaker";
+import { PlayerProps } from "../types/player";
 
 export const  spinRoundsWithCarryOver = (pool: PlayerProps[], perRound: number, nRounds: number): PlayerProps[][] => {
     let carry: PlayerProps[] = [];   // เก็บคนตกค้าง

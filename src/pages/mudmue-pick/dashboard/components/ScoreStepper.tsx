@@ -33,11 +33,12 @@ const trophyGrow = keyframes`
   100% { transform: scale(0.8); }
 `;
 
-const AnimatedTrophy = styled.img`
+const AnimatedTrophy = styled.img<{ faded?: boolean }>`
     animation: ${trophyGrow} 1.2s ease infinite;
     position: relative;
     width: 129px;
     height: 129px;
+    opacity: ${({ faded }) => (faded ? 0.35 : 1)};
 `;
 
 interface ScoreStepperProps {
@@ -70,7 +71,7 @@ export const ScoreStepper = (props: ScoreStepperProps) => {
                 <span className="relative z-[2] ">{score}</span>
                 {showTrophy && (
                     <TrophyContainer>
-                        <AnimatedTrophy src={IconTrophy} alt="trophy" />
+                        <AnimatedTrophy src={IconTrophy} alt="trophy" faded={isDisplay} />
                     </TrophyContainer>
                 )}
             </div>
