@@ -1,8 +1,10 @@
 .result-item-left {
+    position:relative;
     transform: translateX(-20vw);
     opacity: 0;
     transition: transform 0.8s ease-out, opacity 0.8s;
-    width: 200px;
+    width: 250px;
+    height: 58px;
     text-align: right;
     padding: 8px 32px;
     border-radius: 4px;
@@ -15,10 +17,13 @@
 }
 
 .result-item-right {
+    position: relative;
     transform: translateX(20vw);
     opacity: 0;
     transition: transform 0.8s ease-out, opacity 0.8s;
-    width: 200px;
+    width: 250px;
+    height: 58px;
+
     text-align: left;
     padding: 8px 32px;
     border-radius: 4px;
