@@ -1,5 +1,7 @@
-import { HomePage } from "../pages/home/HomePage";
-import { LeaderBoardPage } from "../pages/leader-board/LeaderBoardPage";
+// import { HomePage } from "../pages/home/HomePage";
+// import { LeaderBoardPage } from "../pages/leader-board/LeaderBoardPage";
+
+import { FoodMapPage } from "../pages/mudmue-chim/MudmueChimPage";
 import { MainLayout } from "../pages/MainLayout";
 import { MudmueDashboard } from "../pages/mudmue-pick/dashboard/MudmueDashboard";
 import { MudmueHistory } from "../pages/mudmue-pick/history/MudmueHistory";
@@ -14,7 +16,7 @@ export const routes = [
     path: "/",
     element: <MainLayout />,
     children: [
-      { path: "", element: <HomePage /> },
+      // { path: "", element: <HomePage /> },
       {
         path: "pick",
         element: <MudmuePickPage />,
@@ -25,7 +27,8 @@ export const routes = [
           { path: "profile", element: <MudmueProfile /> },
         ],
       },
-      { path: "leader-board", element: <LeaderBoardPage /> },
+      // { path: "leader-board", element: <LeaderBoardPage /> },
+      { path: "chim", element: <FoodMapPage /> },
       { path: "story-book", element: <StoryBookPage /> },
     ],
   },

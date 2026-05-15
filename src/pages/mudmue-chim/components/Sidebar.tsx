@@ -7,6 +7,7 @@ interface SidebarProps {
   setSearch: (val: string) => void;
   selectedPlaceId: number | null;
   setSelectedPlaceId: (id: number) => void;
+  onDeletePlace?: (id: number) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -15,6 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   setSearch,
   selectedPlaceId,
   setSelectedPlaceId,
+  onDeletePlace,
 }) => {
   const filtered = places.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
@@ -22,44 +24,79 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div style={{
-      width: 280, background: "#fff", borderRadius: 8, margin: 16, marginRight: 0,
-      boxShadow: "0 0 8px #eee", display: "flex", flexDirection: "column"
+      background: "#fff", borderRadius: 8, margin: 0,
+      boxShadow: "0 0 8px #eee", display: "flex", flexDirection: "column",
+      height: "100%", overflow: "hidden"
     }}>
-      <div style={{ padding: 16, paddingBottom: 0 }}>
+      <div style={{ padding: "16px", paddingBottom: "8px" }}>
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search"
+          placeholder="ค้นหาร้านอาหาร..."
+          className="input input-bordered w-full"
           style={{
-            width: "100%",
-            border: "1px solid #bbb", borderRadius: 4, padding: "8px 12px",
             fontSize: 14
           }}
         />
+        <div style={{ padding: "8px 0", fontSize: 12, color: "#aaa" }}>
+          {filtered.length} ร้าน
+        </div>
       </div>
-      <div style={{ padding: 8, flex: 1, overflowY: "auto" }}>
+      <div style={{ padding: "0 8px 8px", flex: 1, overflowY: "auto" }}>
         {filtered.map((place) => (
           <div
             key={place.id}
             onClick={() => setSelectedPlaceId(place.id)}
             style={{
-              padding: "10px 8px",
-              borderRadius: 4,
-              background: selectedPlaceId === place.id ? "#f5c6ec44" : "transparent",
+              padding: "12px 8px",
+              borderRadius: 6,
+              background: selectedPlaceId === place.id ? "#f5c6ec44" : "#fafafa",
               cursor: "pointer",
-              marginBottom: 6,
-              border: "1px solid #eee",
+              marginBottom: 8,
+              border: `1px solid ${selectedPlaceId === place.id ? "#c05cb4aa" : "#eee"}`,
               transition: "background 0.2s",
+              position: "relative",
             }}
           >
-            <div style={{ fontWeight: 600 }}>{place.name}</div>
-            <div style={{ fontSize: 13, color: "#777", margin: "2px 0 2px 0" }}>
-              ⭐ {place.rating}
+            <div style={{ fontWeight: 600, paddingRight: 24, fontSize: "15px" }}>{place.name}</div>
+            <div style={{ fontSize: 12, color: "#777", margin: "4px 0" }}>
+              {"⭐".repeat(Math.round(place.rating))} {place.rating}/5
             </div>
-            <div style={{ fontSize: 13, color: "#999", fontStyle: "italic" }}>
+            <div style={{ fontSize: 12, color: "#999", fontStyle: "italic", marginBottom: "6px", lineHeight: 1.3 }}>
               {place.review}
             </div>
+            {onDeletePlace && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeletePlace(place.id);
+                }}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  background: "#ff6b6b",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 4,
+                  padding: "4px 8px",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLButtonElement).style.background = "#ff5252";
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.background = "#ff6b6b";
+                }}
+                title="ลบ"
+              >
+                ลบ
+              </button>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (
