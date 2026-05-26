@@ -1,6 +1,5 @@
 import IconBin from "../../../assets/bin.svg";
 import IconGear from "../../../assets/icon-gear.png";
-import IconMinusRed from "../../../assets/icon-minus-red.png";
 import { Place } from "./mockPlace";
 import React from "react";
 
