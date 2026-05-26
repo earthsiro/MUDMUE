@@ -1,7 +1,5 @@
-// import { HomePage } from "../pages/home/HomePage";
-// import { LeaderBoardPage } from "../pages/leader-board/LeaderBoardPage";
-
 import { FoodMapPage } from "../pages/mudmue-chim/MudmueChimPage";
+import { HomePage } from "../pages/home/HomePage";
 import { MainLayout } from "../pages/MainLayout";
 import { MudmueDashboard } from "../pages/mudmue-pick/dashboard/MudmueDashboard";
 import { MudmueHistory } from "../pages/mudmue-pick/history/MudmueHistory";
@@ -11,12 +9,24 @@ import { MudmueProfile } from "../pages/mudmue-pick/profile/MudmueProfile";
 import { StoryBookPage } from "../pages/StoryBookPage";
 import { createBrowserRouter } from "react-router-dom";
 
+// import { LeaderBoardPage } from "../pages/leader-board/LeaderBoardPage";
+
+
+
+
+
+
+
+
+
+
+
 export const routes = [
   {
     path: "/",
     element: <MainLayout />,
     children: [
-      // { path: "", element: <HomePage /> },
+      { path: "", element: <HomePage /> },
       {
         path: "pick",
         element: <MudmuePickPage />,
