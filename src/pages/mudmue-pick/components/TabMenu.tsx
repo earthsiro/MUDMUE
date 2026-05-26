@@ -61,7 +61,7 @@ export function TabMenu({
                             onChange={() => onChangeTab(tab.path)}
                         />
                         <TabLabel
-                            htmlFor={`tab_${tab.path}`}
+                            htmlFor={`tab_${tab.path}_${idx}`}
                             active={activeTab === tab.path}
                             onClick={() => onChangeTab(tab.path)}
                         >

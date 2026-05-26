@@ -51,7 +51,7 @@ export const HomePage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 1.5 }}
             >
-                <Tagline>Mud Mue Choke!</Tagline>
+                <Tagline>Mud Mue!</Tagline>
             </TaglineContainer>
             <div className="absolute bottom-[-120px] flex justify-center item-end">
                 <LogoText

@@ -1,9 +1,8 @@
 import {
     MatchDataType,
     PlayerDataType,
-    createMatch,
-    loadMatchesWithFilter,
-    saveHistories,
+    createMatchAsync,
+    loadMatchesWithFilterAsync,
 } from "../../../services/matchService.ts";
 import { getDetailProfile, getDetailProfileByField } from "../../../services/profileService.ts";
 import { useEffect, useState } from "react";
@@ -13,12 +12,8 @@ import IconShuttleCockBlue from "../../../assets/icon-shuttlecock-blue.png";
 import IconShuttleCockRed from "../../../assets/icon-shuttlecock-red.png";
 import { ScoreStepper } from "../dashboard/components/ScoreStepper.tsx";
 import { VSLabel } from "../components/VSLabel.tsx";
+import { breakpoints } from "../../../styles/breakpoints.ts";
 import styled from "styled-components";
-
-const breakpoints = {
-    tablet: 900,
-    mobile: 600,
-};
 
 const DashboardContainer = styled.div`
     width: 100%;
@@ -66,10 +61,14 @@ const ServiceSideRightIcon = styled.img`
 
 export const MudmueHistory = () => {
     const [data, setData] = useState<MatchDataType[]>();
-    const [currentEditData] = useState<MatchDataType[]>([]);
+    const [toast, setToast] = useState<string | null>(null);
 
-    const resolveIsEdit = (id: number) => currentEditData.some((m) => m.id === id);
-    const matchToRender = (d: MatchDataType) => (resolveIsEdit(d.id) ? currentEditData.find((m) => m.id === d.id) : d);
+    const showToast = (msg: string) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 2500);
+    };
+
+    const matchToRender = (d: MatchDataType) => d;
 
     const resolvePlayerLabelLeftSide = (players: PlayerDataType[]) => {
         return players.filter((player) => player.team === "red").sort((a, b) => a.position - b.position);
@@ -77,17 +76,17 @@ export const MudmueHistory = () => {
     const resolvePlayerLabelRightSide = (players: PlayerDataType[]) => {
         return players.filter((player) => player.team === "blue").sort((a, b) => a.position - b.position);
     };
-    const handleRematch = (oldMatch: MatchDataType) => {
+    const handleRematch = async (oldMatch: MatchDataType) => {
         const players = oldMatch.player.map((p, idx) => ({
             ...p,
             score: 0,
             position: p.position ?? idx,
         }));
         const serviceSide = Math.random() < 0.5 ? "red" : "blue";
-        const newList = createMatch(players, serviceSide);
-        saveHistories(newList);
-        setData(loadMatchesWithFilter({ finished: true, orderBy: "updateDate", orderDirection: "desc" }));
-        alert("สร้างแมตช์ใหม่ใน Dashboard เรียบร้อยแล้ว!");
+        await createMatchAsync(players, serviceSide);
+        const updated = await loadMatchesWithFilterAsync({ finished: true, orderBy: "updateDate", orderDirection: "desc" });
+        setData(updated);
+        showToast("สร้างแมตช์ใหม่ใน Dashboard เรียบร้อยแล้ว!");
     };
 
     const resolveDisplayScoreIcon = (
@@ -96,75 +95,50 @@ export const MudmueHistory = () => {
         index: number,
         team: "blue" | "red"
     ): boolean => {
-        if (type === "single") {
-            return true;
-        }
-
-        // type === "duo"
+        if (type === "single") return true;
         const isEven = score % 2 === 0;
-
         const shouldServeIndex = isEven ? 0 : 1;
-
-        // ฝั่ง blue เสิร์ฟตรง index เลย
-        if (team === "blue") {
-            return index === shouldServeIndex;
-        }
-
-        // ฝั่ง red เสิร์ฟตรงข้าม index
+        if (team === "blue") return index === shouldServeIndex;
         return index !== shouldServeIndex;
     };
 
-    // const handleClickEdit = (id: number) => {
-    //     const matchData = data.find((d) => d.id === id);
-    //     if (matchData) {
-    //         setCurrentEditData([...currentEditData, matchData]);
-    //         // เปิด modal หรือทำอย่างอื่นเพื่อแก้ไขข้อมูล
-    //         console.log("Editing match data:", matchData);
-    //     }
-    // };
-    // const handleClickSaveEdit = (id: number) => {
-    //     const editMatch = currentEditData.find((m) => m.id === id);
-    //     if (editMatch) {
-    //         setData((prevData) => prevData.map((d) => (d.id === id ? editMatch : d)));
-    //         setCurrentEditData((prev) => prev.filter((m) => m.id !== id));
-    //     }
-    // };
-    // const handleClickCancelEdit = (id: number) => {
-    //     setCurrentEditData((prev) => prev.filter((m) => m.id !== id));
-    // }; // NOTE : Phase 2 edit available
+    // NOTE: Phase 2 — edit match handlers will be added here
+
     useEffect(() => {
-        setData(loadMatchesWithFilter({ finished: true, orderBy: "updateDate", orderDirection: "desc" }));
+        let mounted = true;
+        loadMatchesWithFilterAsync({ finished: true, orderBy: "updateDate", orderDirection: "desc" }).then((result) => {
+            if (mounted) setData(result);
+        });
+        return () => { mounted = false; };
     }, []);
     return (
         <DashboardContainer>
+            {toast && (
+                <div className="toast toast-top toast-center z-50">
+                    <div className="alert alert-success font-noto">
+                        <span>{toast}</span>
+                    </div>
+                </div>
+            )}
+            {(!data || data.length === 0) && (
+                <div className="w-full flex items-center justify-center py-16">
+                    <p className="font-noto text-[20px] text-gray-400">ยังไม่มีประวัติการแข่งขัน</p>
+                </div>
+            )}
             {data?.map((d) => (
                 <div key={d.id} className="w-full px-16">
                     <div className="card w-full bg-base-100 shadow-lg sm:px-0 md:px-2 h-[182px]">
                         <PlayerCardContainer>
                             <div className="flex flex-row justify-end items-center w-[200px] lg:w-[360px] gap-4 lg:justify-between relative">
-                                {/* <TrophyLeftContainer mode={d.player.length === 2 ? "single" : "duo"}>
-                                    {d.winner === "red" && (
-                                        <>
-                                            <AnimatedTrophy src={IconTrophy}></AnimatedTrophy>
-                                        </>
-                                    )}
-                                </TrophyLeftContainer> */}
-                                {/* {d.player.length ? `${d.player.find((p) => p.team === "blue")!.score}` : "-"} */}
-                                {currentEditData.find((match) => match.id === d.id) ? (
-                                    <div></div>
-                                ) : (
-                                    <ScoreStepper
-                                        className="z-[1]"
-                                        team="red"
-                                        score={d.player.find((p: PlayerDataType) => p.team === "red")!.score}
-                                        callback={() => {}}
-                                        showTrophy={d.winner === "red"}
-                                        isDisplay
-                                    />
-                                )}
-                                {/* <TrophyContainer>
-                                    {d.winner === "red" && <img src={IconTrophy}></img>}
-                                </TrophyContainer> */}
+                                {/* TrophyLeftContainer reserved for Phase 2 */}
+                                <ScoreStepper
+                                    className="z-[1]"
+                                    team="red"
+                                    score={d.player.find((p: PlayerDataType) => p.team === "red")!.score}
+                                    callback={() => {}}
+                                    showTrophy={d.winner === "red"}
+                                    isDisplay
+                                />
                                 <PlayerCardDisplay>
                                     {resolvePlayerLabelLeftSide(matchToRender(d)!.player).map(
                                         (p: PlayerDataType, index: number) => (
@@ -254,62 +228,17 @@ export const MudmueHistory = () => {
                                         )
                                     )}
                                 </PlayerCardDisplay>
-                                {/* <TrophyContainer>
-                                    {d.winner === "blue" && <img src={IconTrophy}></img>}
-                                </TrophyContainer> */}
-                                {/* {d.player.length ? `${d.player.find((p) => p.team === "red")!.score}` : "-"} */}
-                                {currentEditData.find((match) => match.id === d.id) ? (
-                                    <div></div>
-                                ) : (
-                                    <ScoreStepper
-                                        team="blue"
-                                        score={d.player.find((p: PlayerDataType) => p.team === "blue")!.score}
-                                        callback={() => {}}
-                                        isDisplay
-                                        showTrophy={d.winner === "blue"}
-                                    />
-                                )}
-                                {/* <TrophyRightContainer mode={d.player.length === 2 ? "single" : "duo"}>
-                                    {d.winner === "blue" && (
-                                        <>
-                                            <AnimatedTrophy src={IconTrophy}></AnimatedTrophy>
-                                        </>
-                                    )}
-                                </TrophyRightContainer> */}
+                                {/* TrophyRightContainer reserved for Phase 2 */}
+                                <ScoreStepper
+                                    team="blue"
+                                    score={d.player.find((p: PlayerDataType) => p.team === "blue")!.score}
+                                    callback={() => {}}
+                                    isDisplay
+                                    showTrophy={d.winner === "blue"}
+                                />
                             </div>
                             <div className="absolute bottom-2 right-2 h-full flex flex-col items-end gap-4">
-                                {/* {currentEditData.some((match) => match.id === d.id) ? (
-                                    <div className="flex flex-row gap-2">
-                                        <img
-                                            src={IconSave}
-                                            alt="save-edit"
-                                            className="cursor-pointer"
-                                            title="Save"
-                                            onClick={() => handleClickSaveEdit(d.id)}
-                                            width={32}
-                                            height={32}
-                                        />
-                                        <img
-                                            src={IconCancel}
-                                            alt="cancel-edit"
-                                            className="cursor-pointer"
-                                            title="Cancel"
-                                            onClick={() => handleClickCancelEdit(d.id)}
-                                            width={32}
-                                            height={32}
-                                        />
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={IconEdit}
-                                        alt="edit-icon"
-                                        className="cursor-pointer"
-                                        title="Edit Match"
-                                        onClick={() => handleClickEdit(d.id)}
-                                        width={32}
-                                        height={32}
-                                    />
-                                )} */}{" "}
+                                {/* NOTE: Phase 2 — edit match icon will go here */}
                                 {/* NOTE  : Phase 2 edit available */}
                                 <img
                                     src={IconReplay}

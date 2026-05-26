@@ -20,6 +20,11 @@ const MainMenuList: MainMenuProps[] = [
   },
   {
     id: 2,
+    name: "MUDMUE Chim",
+    path: "/chim",
+  },
+  {
+    id: 3,
     name: "Story Book",
     path: "/story-book",
   },

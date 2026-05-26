@@ -1,5 +1,5 @@
+import { FoodMapPage } from "../pages/mudmue-chim/MudmueChimPage";
 import { HomePage } from "../pages/home/HomePage";
-import { LeaderBoardPage } from "../pages/leader-board/LeaderBoardPage";
 import { MainLayout } from "../pages/MainLayout";
 import { MudmueDashboard } from "../pages/mudmue-pick/dashboard/MudmueDashboard";
 import { MudmueHistory } from "../pages/mudmue-pick/history/MudmueHistory";
@@ -8,6 +8,18 @@ import { MudmuePickPage } from "../pages/mudmue-pick/MudmuePickPage";
 import { MudmueProfile } from "../pages/mudmue-pick/profile/MudmueProfile";
 import { StoryBookPage } from "../pages/StoryBookPage";
 import { createBrowserRouter } from "react-router-dom";
+
+// import { LeaderBoardPage } from "../pages/leader-board/LeaderBoardPage";
+
+
+
+
+
+
+
+
+
+
 
 export const routes = [
   {
@@ -25,7 +37,8 @@ export const routes = [
           { path: "profile", element: <MudmueProfile /> },
         ],
       },
-      { path: "leader-board", element: <LeaderBoardPage /> },
+      // { path: "leader-board", element: <LeaderBoardPage /> },
+      { path: "chim", element: <FoodMapPage /> },
       { path: "story-book", element: <StoryBookPage /> },
     ],
   },
