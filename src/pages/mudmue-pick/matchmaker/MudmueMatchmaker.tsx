@@ -1,25 +1,23 @@
 import "./Roulette.css";
 import "./Matchmaker.css";
 
-import { PlayerProfile, loadProfiles } from "../../../services/profileService";
-import React, { useEffect, useState } from "react";
-import { createMatch, loadHistories, saveHistories } from "../../../services/matchService";
+import { PlayerProfile, loadProfilesAsync } from "../../../services/profileService";
+import React, { useEffect, useRef, useState } from "react";
 
 import IconBin from "../../../assets/bin.svg";
 import IconHide from "../../../assets/icon-hide.png";
 import IconReset from "../../../assets/icon-reset.png";
 import IconUnhide from "../../../assets/icon-unhide.png";
 import { MudmueButton } from "../../../components/MudmueButton";
+import { PlayerProps } from "../../../types/player";
 import { Roulette } from "./components/Roulette";
 import { VSLabel } from "../components/VSLabel";
+import { breakpoints } from "../../../styles/breakpoints";
+import { createMatchAsync } from "../../../services/matchService";
 import { spinRoundsWithCarryOver } from "../../../helpers/spinHelp";
 import styled from "styled-components";
 import { useLoader } from "../../../components/Loader";
 
-const breakpoints = {
-    tablet: 900,
-    mobile: 600,
-};
 const MudmueMatchmakerContainer = styled.div`
     width: 100%;
     height: 100%;
@@ -41,13 +39,6 @@ const MudmueMatchmakerPlayerContainer = styled.div`
     height: 200px;
     // height: 20%;
 `;
-export interface PlayerProps {
-    id: number;
-    name: string;
-    displayName?: string;
-    hide: boolean;
-    uuid: string;
-}
 interface RoundResultMatchmakerProps {
     id: number;
     players: PlayerProps[];
@@ -71,6 +62,8 @@ const initialPlayers = (isReset: boolean) => {
 };
 export const MudmueMatchmaker = () => {
     const { showLoader, hideLoader } = useLoader();
+    const resultModalRef = useRef<HTMLDialogElement>(null);
+    const profilePickerRef = useRef<HTMLDialogElement>(null);
     const [players, setPlayers] = useState<PlayerProps[]>(initialPlayers(false));
     const [results, setResults] = useState<RoundResultMatchmakerProps[]>([]);
     const [spinning, setSpinning] = useState(false);
@@ -92,23 +85,12 @@ export const MudmueMatchmaker = () => {
     };
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
-        console.log("handleChange", { name, value, type, checked });
-        // กำหนดชื่อ field ที่ต้องการแปลงเป็น number
         const numberFields = ["playerAmount", "times"];
         let newValue: string | number | boolean;
         if (type === "checkbox") {
             newValue = checked;
         } else if (type === "radio" || numberFields.includes(name)) {
             newValue = Number(value);
-            if (name === "playerAmount" && value === "4") {
-                if (players.length < 4) {
-                    setPlayers([
-                        ...players,
-                        { id: 2, name: "Player 3", hide: false, uuid: "" },
-                        { id: 3, name: "Player 4", hide: false, uuid: "" },
-                    ]);
-                }
-            }
         } else {
             newValue = value;
         }
@@ -127,15 +109,7 @@ export const MudmueMatchmaker = () => {
         setPlayerName("");
     };
     const handleClickRemovePlayer = (p: PlayerProps) => {
-        setPlayers((prevPlayers) => {
-            const index = prevPlayers.indexOf(p);
-            if (index !== -1) {
-                const newPlayers = [...prevPlayers];
-                newPlayers.splice(index, 1);
-                return newPlayers;
-            }
-            return prevPlayers;
-        });
+        setPlayers((prev) => prev.filter((player) => player.id !== p.id));
     };
     const handleClickToggleHidePlayer = (p: PlayerProps) => {
         setPlayers((prevPlayers) => {
@@ -147,20 +121,18 @@ export const MudmueMatchmaker = () => {
         setResults([]);
         setIsShowResultModal(false);
         if (option.hideFromList) {
-            // รวมชื่อ player ทั้งหมดที่อยู่ในผลลัพธ์
             const resultNames = results.flatMap((round) => round.players.map((p) => p.name));
             setPlayers((prevPlayers) =>
                 prevPlayers.map((player) => (resultNames.includes(player.name) ? { ...player, hide: true } : player))
             );
         }
-        (document.getElementById("match_result") as HTMLDialogElement).close();
+        resultModalRef.current?.close();
     };
     // -- ใช้วิธี แบ่งคนเป็น pool แล้วสุ่มจาก pool ออกมาเท่ากับ optionPlayerAmount ในกรณีที่คนเหลือก็จะเอาคนคนเล่นมา random ใหม่
     // --(ถ้าอยาก random แล้ว recycle pool จนครบจำนวนรอบที่ user เลือก
     const spin = () => {
         setIsCloseResultModal(false);
         const pool = players.filter((p) => !p.hide);
-        // --- สุ่ม random ผลลัพธ์ n รอบ ด้วย recycle pool
         const groupList = spinRoundsWithCarryOver(pool, option.playerAmount, option.times);
         const allResults: RoundResultMatchmakerProps[] = groupList.map((group: PlayerProps[], i: number) => ({
             id: results.length + i + 1,
@@ -169,40 +141,34 @@ export const MudmueMatchmaker = () => {
 
         setResults((prev) => [...prev, ...allResults]);
 
-        // Modal แสดงผลลัพธ์ - เหมือนเดิม
-        if (!option.skipAnimation && option.times == 1) {
+        if (!option.skipAnimation && option.times === 1) {
             setSpinning(true);
             setTimeout(() => {
                 setSpinning(false);
                 setIsShowResultModal(true);
-                (document.getElementById("match_result") as HTMLDialogElement).showModal();
+                resultModalRef.current?.showModal();
             }, 4000);
         } else {
             showLoader();
             setTimeout(() => {
                 hideLoader();
                 setIsShowResultModal(true);
-                (document.getElementById("match_result") as HTMLDialogElement).showModal();
+                resultModalRef.current?.showModal();
             }, 1500);
         }
     };
     const openProfileModal = () => {
-        setProfileList(loadProfiles());
-        setSelectedProfiles([]); // reset
-        (document.getElementById("profile_picker") as HTMLDialogElement).showModal();
+        loadProfilesAsync().then((list) => {
+            setProfileList(list);
+            setSelectedProfiles([]);
+            profilePickerRef.current?.showModal();
+        });
     };
-    const closeProfileModal = () => (document.getElementById("profile_picker") as HTMLDialogElement).close();
+    const closeProfileModal = () => profilePickerRef.current?.close();
     const handleAddProfiles = () => {
-        console.log("selectedProfiles uuids:", selectedProfiles);
-        console.log("profileList:", profileList);
-        const toAdd = profileList.filter((p) => selectedProfiles.includes(p.uuid));
-        console.log("toAdd after filter:", toAdd);
-
         const currentUuids = players.map((p) => p.uuid);
-        console.log("current player uuids:", currentUuids);
-
-        const addList = toAdd
-            .filter((p) => !currentUuids.includes(p.uuid))
+        const addList = profileList
+            .filter((p) => selectedProfiles.includes(p.uuid) && !currentUuids.includes(p.uuid))
             .map((p, index) => ({
                 id: players.length + index,
                 name: p.name,
@@ -210,8 +176,6 @@ export const MudmueMatchmaker = () => {
                 hide: false,
                 uuid: p.uuid,
             }));
-        console.log("addList (will add to players):", addList);
-
         setPlayers([...players, ...addList]);
         closeProfileModal();
     };
@@ -229,11 +193,8 @@ export const MudmueMatchmaker = () => {
     const savePlayersToSession = (players: PlayerProps[]) => {
         sessionStorage.setItem("mudmue_players", JSON.stringify(players));
     };
-    const handleClickConfirmResult = () => {
-        console.log("Confirming result...");
-        let historyList = loadHistories();
-
-        results.forEach((group) => {
+    const handleClickConfirmResult = async () => {
+        const createPromises = results.map((group) => {
             const half = group.players.length / 2;
             const redTeam = group.players.slice(0, half).map((p, i) => ({
                 name: p.name,
@@ -249,17 +210,13 @@ export const MudmueMatchmaker = () => {
                 score: 0,
                 position: i,
             }));
-            const players = [...redTeam, ...blueTeam];
-
+            const matchPlayers = [...redTeam, ...blueTeam];
             const serviceSide = Math.random() < 0.5 ? "red" : "blue";
-
-            historyList = createMatch( players, serviceSide);
+            return createMatchAsync(matchPlayers, serviceSide);
         });
-
-        saveHistories(historyList);
-
+        await Promise.all(createPromises);
         setIsShowResultModal(false);
-        (document.getElementById("match_result") as HTMLDialogElement).close();
+        resultModalRef.current?.close();
     };
 
     useEffect(() => {
@@ -398,6 +355,12 @@ export const MudmueMatchmaker = () => {
                             >
                                 <span className="font-noto text-[18px]">Random</span>
                             </MudmueButton>
+                            {players.filter((p) => !p.hide).length < option.playerAmount && (
+                                <span className="font-noto text-[12px] text-gray-400 mt-1">
+                                    Need {option.playerAmount} available players
+                                    (currently {players.filter((p) => !p.hide).length})
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -490,7 +453,7 @@ export const MudmueMatchmaker = () => {
                     </ul>
                 </div>
             </MudmueMatchmakerPlayerContainer>
-            <dialog id="match_result" className="modal">
+            <dialog ref={resultModalRef} className="modal">
                 <div
                     className={`modal-box w-10/12 lg:w-8/12 max-w-5xl flex flex-col items-center ${
                         isShowResultModal ? "animate-fade-in" : ""
@@ -586,11 +549,11 @@ export const MudmueMatchmaker = () => {
                     </span>
                 </div>
             </dialog>
-            <dialog id="profile_picker" className="modal">
+            <dialog ref={profilePickerRef} className="modal">
                 <div className="modal-box">
                     <button
                         className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                        onClick={() => (document.getElementById("profile_picker") as HTMLDialogElement).close()}
+                        onClick={() => profilePickerRef.current?.close()}
                     >
                         ✕
                     </button>

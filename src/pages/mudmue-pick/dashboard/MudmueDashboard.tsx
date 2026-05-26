@@ -1,4 +1,4 @@
-import { MatchDataType, PlayerDataType, loadMatchesWithFilter, updateMatch } from "../../../services/matchService.ts";
+import { MatchDataType, PlayerDataType, loadMatchesWithFilterAsync, updateMatchAsync } from "../../../services/matchService.ts";
 import { getDetailProfile, getDetailProfileByField } from "../../../services/profileService.ts";
 import styled, { keyframes } from "styled-components";
 import { useEffect, useState } from "react";
@@ -11,11 +11,7 @@ import IconShuttleCockBlue from "../../../assets/icon-shuttlecock-blue.png";
 import IconShuttleCockRed from "../../../assets/icon-shuttlecock-red.png";
 import { ScoreStepper } from "./components/ScoreStepper.tsx";
 import { VSLabel } from "../components/VSLabel.tsx";
-
-const breakpoints = {
-    tablet: 900,
-    mobile: 600,
-};
+import { breakpoints } from "../../../styles/breakpoints.ts";
 
 const MudmueDashboardListContainer = styled.div`
     width: 100%;
@@ -168,18 +164,14 @@ const FightPunchRight = styled.img`
 `;
 export const MudmueDashboard = () => {
     const [data, setData] = useState<MatchDataType[]>();
-    const [currentEditData] = useState<MatchDataType[]>([]);
     const [fightingMatchIds, setFightingMatchIds] = useState<number[]>([]);
 
-    const resolveIsEdit = (id: number) => currentEditData.some((m) => m.id === id);
-    const matchToRender = (d: MatchDataType) => (resolveIsEdit(d.id) ? currentEditData.find((m) => m.id === d.id) : d);
+    const matchToRender = (d: MatchDataType) => d;
 
     const resolvePlayerLabelLeftSide = (players: PlayerDataType[]) => {
-        // return players.filter((player) => player.team === "red").sort((a, b) => a.position - b.position);
         return players.filter((player) => player.team === "red").sort((a, b) => a.position - b.position);
     };
     const resolvePlayerLabelRightSide = (players: PlayerDataType[]) => {
-        // return players.filter((player) => player.team === "blue").sort((a, b) => a.position - b.position);
         return players.filter((player) => player.team === "blue").sort((a, b) => a.position - b.position);
     };
     const handleScoreChange = (id: number, team: "blue" | "red", score: number) => {
@@ -240,94 +232,48 @@ export const MudmueDashboard = () => {
         // ฝั่ง red เสิร์ฟตรงข้าม index
         return index !== shouldServeIndex;
     };
-    // const handleClickEdit = (id: number) => {
-    //     const matchData = data.find((d) => d.id === id);
-    //     if (matchData) {
-    //         setCurrentEditData([...currentEditData, matchData]);
-    //         // เปิด modal หรือทำอย่างอื่นเพื่อแก้ไขข้อมูล
-    //         console.log("Editing match data:", matchData);
-    //     }
-    // };
-    // const handleClickSaveEdit = (id: number) => {
-    //     const editMatch = currentEditData.find((m) => m.id === id);
-    //     if (editMatch) {
-    //         setData((prevData) => prevData.map((d) => (d.id === id ? editMatch : d)));
-    //         setCurrentEditData((prev) => prev.filter((m) => m.id !== id));
-    //     }
-    // };
-    // const handleClickCancelEdit = (id: number) => {
-    //     setCurrentEditData((prev) => prev.filter((m) => m.id !== id));
-    // }; // NOTE : Phase 2 edit available
 
-    const handleClickCompleteMatch = (id: number) => {
+    // NOTE: Phase 2 — edit match handlers will be added here
+
+    const handleClickCompleteMatch = async (id: number) => {
         const match = data?.find((d) => d.id === id);
         if (!match) return;
-        console.log("Completing match id:", id);
-        console.log("Match data:", match);
 
-        // รวมคะแนนแต่ละทีม
-        const redScore = match.player.filter((p) => p.team === "red")[0].score ?? 0;
-        const blueScore = match.player.filter((p) => p.team === "blue")[0].score ?? 0;
+        const redScore = match.player.find((p) => p.team === "red")?.score ?? 0;
+        const blueScore = match.player.find((p) => p.team === "blue")?.score ?? 0;
 
-        // หาผู้ชนะ
         let winner: string = "tiled";
         if (redScore > blueScore) winner = "red";
         else if (blueScore > redScore) winner = "blue";
-        console.log("Winner:", winner);
-        // เซฟลง localStorage/history service
-        updateMatch(id, match.player, match.serviceSide!, winner);
-        // setData(updatedData);
+
+        await updateMatchAsync(id, match.player, match.serviceSide!, winner);
         setFightingMatchIds((prev) => [...prev, id]);
 
-        // 2. หลังจาก fade-out (ระยะเวลาเช่น 500ms) ค่อย update list โดยโหลด filter ใหม่
-        setTimeout(() => {
+        setTimeout(async () => {
             setFightingMatchIds((prev) => prev.filter((_id) => _id !== id));
-            setData(loadMatchesWithFilter({ finished: false }));
+            const updated = await loadMatchesWithFilterAsync({ finished: false });
+            setData(updated);
         }, 1000);
     };
 
     useEffect(() => {
-        setData(loadMatchesWithFilter({ finished: false, orderBy: "createDate", orderDirection: "desc" }));
+        let mounted = true;
+        loadMatchesWithFilterAsync({ finished: false, orderBy: "createDate", orderDirection: "desc" }).then((result) => {
+            if (mounted) setData(result);
+        });
+        return () => { mounted = false; };
     }, []);
     return (
         <MudmueDashboardContainer>
             <MudmueDashboardFilterContainer>
                 <div className="flex flex-row gap-4">
-                    {/* <MudmueButton
-                        size="small"
-                        theme="secondary"
-                        onClick={() => {
-                            setData([]);
-                        }}
-                    >
-                        test reset data
-                    </MudmueButton>
-                    <MudmueButton
-                        size="small"
-                        onClick={() => {
-                            setData(getMockMatches());
-                        }}
-                    >
-                        test add mock data
-                    </MudmueButton> */}
+                    {/* NOTE: Phase 2 — filter/add controls will go here */}
                 </div>
                 <div className="flex flex-row gap-4">
-                    {/* <button className="btn btn-circle font-noto " onClick={() => {}}>
-                        <img
-                            src={IconMudVsMud}
-                            alt="random-player"
-                            width={46}
-                            height={46}
-                        />
-                        random
-                    </button> */}
-                    {/* <button className="btn btn-circle font-noto " onClick={() => {}}>
-                        <img src={IconPlusBlue} alt="add-player" />
-                    </button> */}{" "}
-                    {/* NOTE: wait for phase 2 edit match */}
+                    {/* NOTE: Phase 2 — action buttons will go here */}
                 </div>
             </MudmueDashboardFilterContainer>
-            {/* <div className="w-[90%] h-[1px] bg-[#0000ff] my-4"></div> Note: wait for phase 2 edit match */}
+            {/* <div className="w-[90%] h-[1px] bg-[#0000ff] my-4"></div> */}
             <MudmueDashboardListContainer>
                 {data?.length === 0 ? (
                     <div className="w-full h-[840px] flex items-center justify-center flex-col gap-2">
@@ -345,16 +291,11 @@ export const MudmueDashboard = () => {
                                 <div className="card w-full bg-base-100 shadow-lg sm:px-0 md:px-2">
                                     <PlayerCardContainer>
                                         <div className="flex flex-row justify-end items-center w-[200px] lg:w-[360px] gap-4 lg:justify-between">
-                                            {/* {d.player.length ? `${d.player.find((p) => p.team === "blue")!.score}` : "-"} */}
-                                            {currentEditData.find((match) => match.id === d.id) ? (
-                                                <div></div>
-                                            ) : (
-                                                <ScoreStepper
-                                                    team="red"
-                                                    score={d.player.find((p) => p.team === "red")!.score}
-                                                    callback={(s) => handleScoreChange(d.id, "red", s)}
-                                                />
-                                            )}
+                                            <ScoreStepper
+                                                team="red"
+                                                score={d.player.find((p) => p.team === "red")!.score}
+                                                callback={(s) => handleScoreChange(d.id, "red", s)}
+                                            />
 
                                             <PlayerCardDisplay>
                                                 {resolvePlayerLabelLeftSide(matchToRender(d)!.player).map(
@@ -453,51 +394,14 @@ export const MudmueDashboard = () => {
                                                     )
                                                 )}
                                             </PlayerCardDisplay>
-                                            {/* {d.player.length ? `${d.player.find((p) => p.team === "red")!.score}` : "-"} */}
-                                            {currentEditData.find((match) => match.id === d.id) ? (
-                                                <div></div>
-                                            ) : (
-                                                <ScoreStepper
-                                                    team="blue"
-                                                    score={d.player.find((p) => p.team === "blue")!.score}
-                                                    callback={(s) => handleScoreChange(d.id, "blue", s)}
-                                                />
-                                            )}
+                                            <ScoreStepper
+                                                team="blue"
+                                                score={d.player.find((p) => p.team === "blue")!.score}
+                                                callback={(s) => handleScoreChange(d.id, "blue", s)}
+                                            />
                                         </div>
                                         <div className="absolute bottom-2 right-2 h-full flex flex-col items-end gap-4">
-                                            {/* {currentEditData.some((match) => match.id === d.id) ? (
-                                    <div className="flex flex-row gap-2">
-                                        <img
-                                            src={IconSave}
-                                            alt="save-edit"
-                                            className="cursor-pointer"
-                                            title="Save"
-                                            onClick={() => handleClickSaveEdit(d.id)}
-                                            width={32}
-                                            height={32}
-                                        />
-                                        <img
-                                            src={IconCancel}
-                                            alt="cancel-edit"
-                                            className="cursor-pointer"
-                                            title="Cancel"
-                                            onClick={() => handleClickCancelEdit(d.id)}
-                                            width={32}
-                                            height={32}
-                                        />
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={IconEdit}
-                                        alt="edit-icon"
-                                        className="cursor-pointer"
-                                        title="Edit Match"
-                                        onClick={() => handleClickEdit(d.id)}
-                                        width={32}
-                                        height={32}
-                                    />
-                                )} */}{" "}
-                                            {/* NOTE  : Phase 2 edit available */}
+                                            {/* NOTE: Phase 2 — edit match icon will go here */}
                                             <img
                                                 src={IconComplete}
                                                 alt="complete-match"

@@ -119,3 +119,14 @@ const genUniqueKey = (existingKeys: string[], length = 6) => {
     } while (existingKeys.includes(key));
     return key;
 };
+
+// ---------------------------------------------------------------------------
+// Async API layer — simulates HTTP calls (swap for real fetch() when ready)
+// ---------------------------------------------------------------------------
+
+const simulateDelay = (ms = 300) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+export const loadProfilesAsync = async (): Promise<PlayerProfile[]> => {
+    await simulateDelay();
+    return loadProfiles();
+};

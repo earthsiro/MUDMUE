@@ -1,4 +1,9 @@
+import { PlayerProfile, loadProfiles, saveProfiles } from "./profileService";
+
 import MockData from "./mockDashboardData";
+
+/** Simulates a network delay — replace with real fetch() when API is ready */
+const simulateDelay = (ms = 300) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export interface MatchDataType {
     id: number;
@@ -67,13 +72,13 @@ export const loadMatchesWithFilter = (filter: MatchFilterPayload = {}): MatchDat
     });
     if (filter.orderBy) {
         result = result.sort((a, b) => {
-            let valA = a[filter.orderBy!];
-            let valB = b[filter.orderBy!];
+            let valA: number | string = a[filter.orderBy!] as string;
+            let valB: number | string = b[filter.orderBy!] as string;
 
-            // ถ้า field เป็น number หรือ date ให้แปลงก่อน
+            // ถ้า field เป็น date ให้แปลงเป็น timestamp ก่อน
             if (filter.orderBy === "createDate" || filter.orderBy === "updateDate") {
-                valA = new Date(valA).getTime();
-                valB = new Date(valB).getTime();
+                valA = new Date(valA as string).getTime();
+                valB = new Date(valB as string).getTime();
             }
 
             // ถ้า orderDirection เป็น desc สลับลำดับ
@@ -84,40 +89,12 @@ export const loadMatchesWithFilter = (filter: MatchFilterPayload = {}): MatchDat
             }
         });
     }
-    console.log("loadMatchesWithFilter result:", result);
     return result;
 };
 
 export const saveHistories = (list: MatchDataType[]) => {
     localStorage.setItem("mudmue_history", JSON.stringify(list));
 };
-
-// export const addHistory = (players: PlayerDataType[], serviceSide: string, winner: string): MatchDataType[] => {
-//     const list = loadHistories();
-//     const maxId = list.length ? Math.max(...list.map((h) => h.id)) : 0;
-//     const newHistory: MatchDataType = {
-//         id: maxId + 1,
-//         player: players,
-//         serviceSide,
-//         winner,
-//         createDate: new Date().toISOString(),
-//         updateDate: new Date().toISOString(),
-//     };
-//     return [...list, newHistory];
-// };
-
-// export const updateHistory = (
-//     id: number,
-//     players: PlayerDataType[],
-//     serviceSide: string,
-//     winner: string
-// ): MatchDataType[] => {
-//     const list = loadHistories();
-//     return list.map((h) => {
-//         const now = new Date().toISOString();
-//         return h.id === id ? { ...h, player: players, serviceSide, winner, updateDate: now } : h;
-//     });
-// };
 
 export const createMatch = (players: PlayerDataType[], serviceSide: string): MatchDataType[] => {
     const list = loadHistories();
@@ -141,11 +118,32 @@ export const updateMatch = (
     winner: string
 ): MatchDataType[] => {
     const list = loadHistories();
-    const newList = list.map((h) => {
-        const now = new Date().toISOString();
-        return h.id === id ? { ...h, player: players, serviceSide, winner, updateDate: now } : h;
-    });
+    const now = new Date().toISOString();
+    const newList = list.map((h) =>
+        h.id === id ? { ...h, player: players, serviceSide, winner, updateDate: now, finishedDate: now } : h
+    );
     saveHistories(newList);
+
+    // อัปเดต win/lose ของ profile
+    if (winner !== "tiled") {
+        const profiles = loadProfiles();
+        const match = newList.find((h) => h.id === id);
+        if (match) {
+            const updatedProfiles = profiles.map((profile: PlayerProfile) => {
+                const playerInMatch = match.player.find((p) => p.uuid === profile.uuid);
+                if (!playerInMatch) return profile;
+                const isWinner = playerInMatch.team === winner;
+                return {
+                    ...profile,
+                    win: isWinner ? profile.win + 1 : profile.win,
+                    lose: !isWinner ? profile.lose + 1 : profile.lose,
+                    updateDate: now,
+                };
+            });
+            saveProfiles(updatedProfiles);
+        }
+    }
+
     return newList;
 };
 
@@ -155,4 +153,31 @@ export const deleteHistory = (list: MatchDataType[], id: number): MatchDataType[
 
 export const getMockMatches = (): MatchDataType[] => {
     return MockData;
+};
+
+// ---------------------------------------------------------------------------
+// Async API layer — simulates HTTP calls (swap for real fetch() when ready)
+// ---------------------------------------------------------------------------
+
+export const loadMatchesWithFilterAsync = async (filter: MatchFilterPayload = {}): Promise<MatchDataType[]> => {
+    await simulateDelay();
+    return loadMatchesWithFilter(filter);
+};
+
+export const createMatchAsync = async (
+    players: PlayerDataType[],
+    serviceSide: string
+): Promise<MatchDataType[]> => {
+    await simulateDelay();
+    return createMatch(players, serviceSide);
+};
+
+export const updateMatchAsync = async (
+    id: number,
+    players: PlayerDataType[],
+    serviceSide: string,
+    winner: string
+): Promise<MatchDataType[]> => {
+    await simulateDelay();
+    return updateMatch(id, players, serviceSide, winner);
 };
