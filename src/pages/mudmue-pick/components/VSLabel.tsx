@@ -19,7 +19,7 @@ export const VSLabel = (props: VSLabelProps) => {
     const { size = 32 } = props;
 
     return (
-        <div className={`font-noto font-bold text-[${size}px] relative w-10 h-12`}>
+        <div className="font-noto font-bold relative w-10 h-12" style={{ fontSize: size }}>
             <VLabel>V</VLabel>
             <SLabel>S</SLabel>
         </div>
