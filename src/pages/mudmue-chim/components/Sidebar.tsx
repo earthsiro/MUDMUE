@@ -1,3 +1,6 @@
+import IconBin from "../../../assets/bin.svg";
+import IconGear from "../../../assets/icon-gear.png";
+import IconMinusRed from "../../../assets/icon-minus-red.png";
 import { Place } from "./mockPlace";
 import React from "react";
 
@@ -8,7 +11,10 @@ interface SidebarProps {
   selectedPlaceId: number | null;
   setSelectedPlaceId: (id: number) => void;
   onDeletePlace?: (id: number) => void;
+  onEditPlace?: (id: number) => void;
 }
+
+
 
 const Sidebar: React.FC<SidebarProps> = ({
   places,
@@ -17,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   selectedPlaceId,
   setSelectedPlaceId,
   onDeletePlace,
+  onEditPlace,
 }) => {
   const filtered = places.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
@@ -35,9 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           onChange={(e) => setSearch(e.target.value)}
           placeholder="ค้นหาร้านอาหาร..."
           className="input input-bordered w-full"
-          style={{
-            fontSize: 14
-          }}
+          style={{ fontSize: 14 }}
         />
         <div style={{ padding: "8px 0", fontSize: 12, color: "#aaa" }}>
           {filtered.length} ร้าน
@@ -59,44 +64,49 @@ const Sidebar: React.FC<SidebarProps> = ({
               position: "relative",
             }}
           >
-            <div style={{ fontWeight: 600, paddingRight: 24, fontSize: "15px" }}>{place.name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 56, marginBottom: 4 }}>
+              <span style={{ fontWeight: 600, fontSize: "15px" }}>{place.name}</span>
+            </div>
             <div style={{ fontSize: 12, color: "#777", margin: "4px 0" }}>
               {"⭐".repeat(Math.round(place.rating))} {place.rating}/5
             </div>
             <div style={{ fontSize: 12, color: "#999", fontStyle: "italic", marginBottom: "6px", lineHeight: 1.3 }}>
               {place.review}
             </div>
-            {onDeletePlace && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeletePlace(place.id);
-                }}
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                  background: "#ff6b6b",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 4,
-                  padding: "4px 8px",
-                  cursor: "pointer",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  transition: "background 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLButtonElement).style.background = "#ff5252";
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLButtonElement).style.background = "#ff6b6b";
-                }}
-                title="ลบ"
-              >
-                ลบ
-              </button>
-            )}
+            <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
+              {onEditPlace && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEditPlace(place.id); }}
+                  style={{
+                    background: "none",
+                    color: "#6060c0",
+                    width: 28, height: 28,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                  }}
+                  title="แก้ไข"
+                >
+                  <img src={IconGear} alt="แก้ไข" style={{ width: 22, height: 22 }} />
+                </button>
+              )}
+              {onDeletePlace && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDeletePlace(place.id); }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    width: 28, height: 28,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                  title="ลบ"
+                >
+                  <img src={IconBin} alt="ลบ" style={{ width: 22, height: 22 }} />
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {filtered.length === 0 && (

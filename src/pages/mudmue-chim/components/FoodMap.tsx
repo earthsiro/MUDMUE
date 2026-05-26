@@ -4,6 +4,7 @@ import L, { LeafletMouseEvent } from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import React, { useEffect } from "react";
 
+import IconMarkLocation from "../../../assets/icon-mark-location.png"
 import { Place } from "./mockPlace";
 
 // Leaflet marker icon fix for Vite/React
@@ -134,7 +135,7 @@ const FoodMap: React.FC<FoodMapProps> = ({ places, selectedPlaceId, currentLocat
             }}
             title="ตำแหน่งปัจจุบัน"
           >
-            🎯
+            <img src={IconMarkLocation} alt="mark-location"/>
           </button>
         </div>
       )}

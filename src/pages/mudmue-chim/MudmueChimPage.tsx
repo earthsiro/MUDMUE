@@ -2,6 +2,9 @@ import { Place, places as mockPlaces } from "./components/mockPlace";
 import React, { useEffect, useState } from "react";
 
 import FoodMap from "./components/FoodMap";
+import IconFood from "../../assets/icon-food.png";
+import IconMinusRed from "../../assets/icon-minus-red.png";
+import { MudmueButton } from "../../components/MudmueButton";
 import Sidebar from "./components/Sidebar";
 import styled from "styled-components";
 
@@ -140,12 +143,18 @@ export const FoodMapPage: React.FC = () => {
         }
     }, []);
 
-    // Modal state
+    // Add pin modal state
     const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [formName, setFormName] = useState("");
     const [formReview, setFormReview] = useState("");
     const [formRating, setFormRating] = useState<number>(5);
     const [showPinListModal, setShowPinListModal] = useState(false);
+
+    // Edit modal state
+    const [editingPlace, setEditingPlace] = useState<Place | null>(null);
+    const [editFormName, setEditFormName] = useState("");
+    const [editFormReview, setEditFormReview] = useState("");
+    const [editFormRating, setEditFormRating] = useState<number>(5);
 
     const handleMapClick = (lat: number, lng: number) => {
         setPendingLocation({ lat, lng });
@@ -182,6 +191,31 @@ export const FoodMapPage: React.FC = () => {
         if (selectedPlaceId === id) setSelectedPlaceId(null);
     };
 
+    const handleOpenEdit = (id: number) => {
+        const place = places.find((p) => p.id === id);
+        if (!place) return;
+        setEditingPlace(place);
+        setEditFormName(place.name);
+        setEditFormReview(place.review);
+        setEditFormRating(place.rating);
+        const modal = document.getElementById("edit-pin-modal") as HTMLDialogElement;
+        modal?.showModal();
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingPlace || !editFormName.trim()) return;
+        const updated = places.map((p) =>
+            p.id === editingPlace.id
+                ? { ...p, name: editFormName.trim(), review: editFormReview.trim(), rating: editFormRating }
+                : p
+        );
+        setPlaces(updated);
+        savePlaces(updated);
+        setEditingPlace(null);
+        const modal = document.getElementById("edit-pin-modal") as HTMLDialogElement;
+        modal?.close();
+    };
+
     return (
         <FoodMapPageContainer>
             <FoodMapTitleContent>
@@ -215,6 +249,7 @@ export const FoodMapPage: React.FC = () => {
                         selectedPlaceId={selectedPlaceId}
                         setSelectedPlaceId={setSelectedPlaceId}
                         onDeletePlace={handleDeletePlace}
+                        onEditPlace={handleOpenEdit}
                     />
                 </SidebarContainer>
             </FoodMapContent>
@@ -279,28 +314,110 @@ export const FoodMapPage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <div className="modal-action">
-                        <button
-                            className="btn"
+                    <div className="modal-action" style={{ gap: 12 }}>
+                        <MudmueButton
+                            size="small"
+                            theme="outline-secondary"
                             onClick={() => {
                                 setPendingLocation(null);
                                 (document.getElementById("add-pin-modal") as HTMLDialogElement)?.close();
                             }}
                         >
                             ยกเลิก
-                        </button>
-                        <button
-                            className="btn"
-                            style={{ background: "#c05cb4", color: "#fff", borderColor: "#c05cb4" }}
+                        </MudmueButton>
+                        <MudmueButton
+                            size="small"
+                            theme="secondary"
                             onClick={handleAddPin}
                             disabled={!formName.trim()}
                         >
                             บันทึก
-                        </button>
+                        </MudmueButton>
                     </div>
                 </div>
                 <form method="dialog" className="modal-backdrop">
                     <button onClick={() => setPendingLocation(null)}>close</button>
+                </form>
+            </dialog>
+
+            {/* Edit Pin Modal */}
+            <dialog id="edit-pin-modal" className="modal">
+                <div className="modal-box" style={{ maxWidth: 420 }}>
+                    <h3 className="font-bold text-lg mb-4" style={{ color: "#c05cb4" }}>
+                        ✏️ แก้ไขร้านอาหาร
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                        <div>
+                            <label className="label text-sm font-semibold">ชื่อร้าน *</label>
+                            <input
+                                type="text"
+                                className="input input-bordered w-full"
+                                placeholder="เช่น ก๋วยเตี๋ยวเรือ..."
+                                value={editFormName}
+                                onChange={(e) => setEditFormName(e.target.value)}
+                                maxLength={80}
+                            />
+                        </div>
+                        <div>
+                            <label className="label text-sm font-semibold">รีวิว / รายละเอียด</label>
+                            <textarea
+                                className="textarea textarea-bordered w-full"
+                                placeholder="รสชาติ บรรยากาศ สิ่งที่ชอบ..."
+                                value={editFormReview}
+                                onChange={(e) => setEditFormReview(e.target.value)}
+                                rows={3}
+                                maxLength={200}
+                            />
+                        </div>
+                        <div>
+                            <label className="label text-sm font-semibold">คะแนน</label>
+                            <div className="flex items-center gap-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() => setEditFormRating(star)}
+                                        style={{
+                                            fontSize: 28,
+                                            background: "none",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            opacity: star <= editFormRating ? 1 : 0.25,
+                                            transition: "opacity 0.15s",
+                                        }}
+                                    >
+                                        ⭐
+                                    </button>
+                                ))}
+                                <span style={{ fontSize: 14, color: "#888", marginLeft: 4 }}>
+                                    {editFormRating} / 5
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-action" style={{ gap: 12 }}>
+                        <MudmueButton
+                            size="small"
+                            theme="outline-secondary"
+                            onClick={() => {
+                                setEditingPlace(null);
+                                (document.getElementById("edit-pin-modal") as HTMLDialogElement)?.close();
+                            }}
+                        >
+                            ยกเลิก
+                        </MudmueButton>
+                        <MudmueButton
+                            size="small"
+                            theme="secondary"
+                            onClick={handleSaveEdit}
+                            disabled={!editFormName.trim()}
+                        >
+                            บันทึก
+                        </MudmueButton>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={() => setEditingPlace(null)}>close</button>
                 </form>
             </dialog>
 
@@ -358,32 +475,60 @@ export const FoodMapPage: React.FC = () => {
                                             marginBottom: "8px",
                                             border: `1px solid ${selectedPlaceId === place.id ? "#c05cb4aa" : "#eee"}`,
                                             transition: "background 0.2s",
+                                            position: "relative",
                                         }}
                                     >
-                                        <div style={{ fontWeight: 600, fontSize: "16px" }}>{place.name}</div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 64, marginBottom: 4 }}>
+                                            <img src={IconFood} alt="food" style={{ width: 18, height: 18, flexShrink: 0 }} />
+                                            <span style={{ fontWeight: 600, fontSize: "16px" }}>{place.name}</span>
+                                        </div>
                                         <div style={{ fontSize: "14px", color: "#777", margin: "4px 0" }}>
                                             {"⭐".repeat(Math.round(place.rating))} {place.rating}/5
                                         </div>
                                         <div style={{ fontSize: "14px", color: "#999", fontStyle: "italic", marginBottom: "8px" }}>
                                             {place.review}
                                         </div>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeletePlace(place.id);
-                                            }}
-                                            style={{
-                                                background: "#ff6b6b",
-                                                color: "white",
-                                                border: "none",
-                                                padding: "4px 12px",
-                                                borderRadius: "4px",
-                                                cursor: "pointer",
-                                                fontSize: "12px",
-                                            }}
-                                        >
-                                            ลบ
-                                        </button>
+                                        <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 4 }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowPinListModal(false);
+                                                    handleOpenEdit(place.id);
+                                                }}
+                                                style={{
+                                                    background: "#f0f0ff",
+                                                    color: "#6060c0",
+                                                    border: "1px solid #c0c0f0",
+                                                    borderRadius: 4,
+                                                    width: 30, height: 30,
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                    cursor: "pointer",
+                                                }}
+                                                title="แก้ไข"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeletePlace(place.id);
+                                                }}
+                                                style={{
+                                                    background: "none",
+                                                    border: "none",
+                                                    padding: 0,
+                                                    width: 30, height: 30,
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                    cursor: "pointer",
+                                                }}
+                                                title="ลบ"
+                                            >
+                                                <img src={IconMinusRed} alt="ลบ" style={{ width: 24, height: 24 }} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             {places.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
