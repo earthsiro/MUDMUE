@@ -139,7 +139,7 @@ export const StoryBookPage = () => {
                 <img src={LogoMudmue} alt="Logo Mudmue" width={120} height={120} />
 
                 {StoryBookElementList.map((element: StoryBookElementProps) => (
-                    <li onClick={() => handleClick(element.id)} className="drawer-end">
+                    <li key={element.id} onClick={() => handleClick(element.id)} className="drawer-end">
                         <a className="font-noto text-[18px]">{element.name}</a>
                     </li>
                 ))}

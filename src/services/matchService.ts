@@ -1,9 +1,10 @@
 import { PlayerProfile, loadProfiles, saveProfiles } from "./profileService";
 
-import MockData from "./mockDashboardData";
-
 /** Simulates a network delay — replace with real fetch() when API is ready */
 const simulateDelay = (ms = 300) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Winner value used when a match ends in a draw. */
+export const TIED = "tied";
 
 export interface MatchDataType {
     id: number;
@@ -125,7 +126,7 @@ export const updateMatch = (
     saveHistories(newList);
 
     // อัปเดต win/lose ของ profile
-    if (winner !== "tiled") {
+    if (winner !== TIED) {
         const profiles = loadProfiles();
         const match = newList.find((h) => h.id === id);
         if (match) {
@@ -145,14 +146,6 @@ export const updateMatch = (
     }
 
     return newList;
-};
-
-export const deleteHistory = (list: MatchDataType[], id: number): MatchDataType[] => {
-    return list.filter((h) => h.id !== id);
-};
-
-export const getMockMatches = (): MatchDataType[] => {
-    return MockData;
 };
 
 // ---------------------------------------------------------------------------

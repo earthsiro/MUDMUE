@@ -15,8 +15,8 @@ const MainMenuList: MainMenuProps[] = [
   { id: 0, name: "Home", path: "/" },
   {
     id: 1,
-    name: "MUDMUE Pick",
-    path: "/pick",
+    name: "MUDMUE Chok",
+    path: "/chok",
   },
   {
     id: 2,
@@ -25,6 +25,11 @@ const MainMenuList: MainMenuProps[] = [
   },
   {
     id: 3,
+    name: "WuWa MudMue",
+    path: "/ww-draft",
+  },
+  {
+    id: 4,
     name: "Story Book",
     path: "/story-book",
   },
@@ -125,7 +130,10 @@ export const MainLayout = () => {
       </div>
 
       {/* Drawer Side */}
-      <div className="drawer-side">
+      {/* daisyUI ไม่ตั้ง z-index ให้ .drawer-side (fixed, z auto) — เนื้อหาในหน้าที่มี
+          z-index ของตัวเอง (HomePage CenterContent = 2, leaflet panes/controls สูงถึง 1000)
+          จะทับเมนูจนกดไม่ได้ ต้องยกขึ้นมาเหนือทุกอย่าง */}
+      <div className="drawer-side z-[2000]">
         <label
           htmlFor="my-drawer"
           aria-label="close sidebar"
@@ -138,9 +146,9 @@ export const MainLayout = () => {
             <li
               key={element.id}
               onClick={() => handleClickMenu(element.path)}
-              className="drawer-end"
             >
-              <a className="font-noto text-[28px]">{element.name}</a>
+              {/* daisyUI .menu pins line-height to 1.25rem — too tight for 28px text once a label wraps */}
+              <a className="font-noto text-[28px] leading-tight whitespace-nowrap">{element.name}</a>
             </li>
           ))}
         </ul>

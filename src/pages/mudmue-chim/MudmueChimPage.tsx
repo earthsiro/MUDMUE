@@ -1,11 +1,11 @@
 import { Place, places as mockPlaces } from "./components/mockPlace";
 import React, { useEffect, useState } from "react";
+import Sidebar, { SortKey } from "./components/Sidebar";
 
 import FoodMap from "./components/FoodMap";
-import IconFood from "../../assets/icon-food.png";
-import IconMinusRed from "../../assets/icon-minus-red.png";
 import { MudmueButton } from "../../components/MudmueButton";
-import Sidebar from "./components/Sidebar";
+import { PageHeader } from "../../components/PageHeader";
+import { breakpoints } from "../../styles/breakpoints";
 import styled from "styled-components";
 
 const STORAGE_KEY = "mudmue-chim-places";
@@ -24,36 +24,64 @@ function savePlaces(places: Place[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
 }
 
-// Responsive breakpoints
-const breakpoints = {
-    tablet: 900,
-    mobile: 600,
-};
-
 const FoodMapPageContainer = styled.div`
     width: 100%;
     height: 100%;
-`;
-
-const FoodMapTitleContent = styled.div`
-    width: 100%;
     display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    padding: 24px;
+    flex-direction: column;
+`;
 
-    @media (max-width: ${breakpoints.tablet}px) {
-        padding: 16px;
-    }
-    @media (max-width: ${breakpoints.mobile}px) {
-        padding: 8px;
+const AddPlaceButton = styled.button`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: var(--brand-pink);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: box-shadow 0.2s, opacity 0.2s;
+
+    &:hover {
+        opacity: 0.9;
+        box-shadow: 0 0 5px 0 var(--brand-pink);
     }
 `;
 
+/** แถบบอกใบ้ให้คลิกบนแผนที่ โผล่หลังกดปุ่ม "เพิ่มร้านอาหาร" */
+const MapHint = styled.div`
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 120px);
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--brand-pink);
+    color: var(--brand-pink);
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    button {
+        cursor: pointer;
+        line-height: 1;
+        color: inherit;
+    }
+`;
+
+/* กินพื้นที่ที่เหลือจาก PageHeader แทนการหักความสูงหัวเพจเป็นตัวเลขตายตัว */
 const FoodMapContent = styled.div`
     width: 100%;
-    height: calc(100% - 88px);
-    padding: 0 16px;
+    flex: 1;
+    min-height: 0;
+    padding: 0 16px 16px;
     display: flex;
     gap: 16px;
     background: #f9f9f9;
@@ -96,8 +124,8 @@ const PinListButton = styled.button`
     transform: translateX(-50%);
     z-index: 400;
     background: white;
-    border: 2px solid #c05cb4;
-    color: #c05cb4;
+    border: 2px solid var(--brand-pink);
+    color: var(--brand-pink);
     padding: 10px 20px;
     border-radius: 8px;
     font-weight: 600;
@@ -106,7 +134,7 @@ const PinListButton = styled.button`
     transition: all 0.2s;
 
     &:hover {
-        background: #c05cb4;
+        background: var(--brand-pink);
         color: white;
     }
 
@@ -118,6 +146,9 @@ const PinListButton = styled.button`
 export const FoodMapPage: React.FC = () => {
     const [places, setPlaces] = useState<Place[]>(loadPlaces);
     const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState<SortKey>("rating");
+    const [minRating, setMinRating] = useState(0);
+    const [showAddHint, setShowAddHint] = useState(false);
     const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
     const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -157,6 +188,7 @@ export const FoodMapPage: React.FC = () => {
     const [editFormRating, setEditFormRating] = useState<number>(5);
 
     const handleMapClick = (lat: number, lng: number) => {
+        setShowAddHint(false);
         setPendingLocation({ lat, lng });
         setFormName("");
         setFormReview("");
@@ -218,12 +250,16 @@ export const FoodMapPage: React.FC = () => {
 
     return (
         <FoodMapPageContainer>
-            <FoodMapTitleContent>
-                <span className="font-noto text-[24px]">
-                    MUDMUE Chim
-                </span>
-               
-            </FoodMapTitleContent>
+            <PageHeader
+                crumbs={[{ name: "MUDMUE Chim" }, { name: "แผนที่ร้าน" }]}
+                title="MUDMUE Chim"
+                subtitle="บันทึกและค้นหาร้านอาหารที่คุณชิมมาแล้ว"
+                actions={
+                    <AddPlaceButton onClick={() => setShowAddHint(true)}>
+                        + เพิ่มร้านอาหาร
+                    </AddPlaceButton>
+                }
+            />
 
             <FoodMapContent>
                 {/* Map */}
@@ -234,6 +270,14 @@ export const FoodMapPage: React.FC = () => {
                         currentLocation={currentLocation}
                         onMapClick={handleMapClick}
                     />
+                    {showAddHint && (
+                        <MapHint>
+                            <span>คลิกตำแหน่งบนแผนที่เพื่อปักหมุดร้านอาหาร</span>
+                            <button onClick={() => setShowAddHint(false)} title="ปิด">
+                                ✕
+                            </button>
+                        </MapHint>
+                    )}
                     {/* Pin list button for mobile/tablet */}
                     <PinListButton onClick={() => setShowPinListModal(true)}>
                         📌 รายการร้าน ({places.length})
@@ -246,6 +290,11 @@ export const FoodMapPage: React.FC = () => {
                         places={places}
                         search={search}
                         setSearch={setSearch}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                        minRating={minRating}
+                        setMinRating={setMinRating}
+                        currentLocation={currentLocation}
                         selectedPlaceId={selectedPlaceId}
                         setSelectedPlaceId={setSelectedPlaceId}
                         onDeletePlace={handleDeletePlace}
@@ -257,7 +306,7 @@ export const FoodMapPage: React.FC = () => {
             {/* Add Pin Modal */}
             <dialog id="add-pin-modal" className="modal">
                 <div className="modal-box" style={{ maxWidth: 420 }}>
-                    <h3 className="font-bold text-lg mb-4" style={{ color: "#c05cb4" }}>
+                    <h3 className="font-bold text-lg mb-4" style={{ color: "var(--brand-pink)" }}>
                         📍 ปักหมุดร้านอาหาร
                     </h3>
                     <div className="flex flex-col gap-3">
@@ -343,7 +392,7 @@ export const FoodMapPage: React.FC = () => {
             {/* Edit Pin Modal */}
             <dialog id="edit-pin-modal" className="modal">
                 <div className="modal-box" style={{ maxWidth: 420 }}>
-                    <h3 className="font-bold text-lg mb-4" style={{ color: "#c05cb4" }}>
+                    <h3 className="font-bold text-lg mb-4" style={{ color: "var(--brand-pink)" }}>
                         ✏️ แก้ไขร้านอาหาร
                     </h3>
                     <div className="flex flex-col gap-3">
@@ -433,7 +482,7 @@ export const FoodMapPage: React.FC = () => {
                                 marginBottom: "16px",
                             }}
                         >
-                            <h3 className="font-bold text-lg" style={{ color: "#c05cb4" }}>
+                            <h3 className="font-bold text-lg" style={{ color: "var(--brand-pink)" }}>
                                 📌 รายการร้านอาหาร
                             </h3>
                             <button
@@ -448,94 +497,28 @@ export const FoodMapPage: React.FC = () => {
                                 ✕
                             </button>
                         </div>
-                        <div>
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="ค้นหาร้านอาหาร..."
-                                className="input input-bordered w-full mb-4"
+                        {/* ใช้ Sidebar ตัวเดียวกับฝั่ง desktop จะได้มีตัวกรอง/เรียงลำดับชุดเดียวกัน */}
+                        <div style={{ height: "calc(80vh - 110px)" }}>
+                            <Sidebar
+                                places={places}
+                                search={search}
+                                setSearch={setSearch}
+                                sortBy={sortBy}
+                                setSortBy={setSortBy}
+                                minRating={minRating}
+                                setMinRating={setMinRating}
+                                currentLocation={currentLocation}
+                                selectedPlaceId={selectedPlaceId}
+                                setSelectedPlaceId={(id) => {
+                                    setSelectedPlaceId(id);
+                                    setShowPinListModal(false);
+                                }}
+                                onDeletePlace={handleDeletePlace}
+                                onEditPlace={(id) => {
+                                    setShowPinListModal(false);
+                                    handleOpenEdit(id);
+                                }}
                             />
-                        </div>
-                        <div style={{ overflowY: "auto", maxHeight: "calc(80vh - 150px)" }}>
-                            {places
-                                .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-                                .map((place) => (
-                                    <div
-                                        key={place.id}
-                                        onClick={() => {
-                                            setSelectedPlaceId(place.id);
-                                            setShowPinListModal(false);
-                                        }}
-                                        style={{
-                                            padding: "12px",
-                                            borderRadius: "8px",
-                                            background: selectedPlaceId === place.id ? "#f5c6ec44" : "transparent",
-                                            cursor: "pointer",
-                                            marginBottom: "8px",
-                                            border: `1px solid ${selectedPlaceId === place.id ? "#c05cb4aa" : "#eee"}`,
-                                            transition: "background 0.2s",
-                                            position: "relative",
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 64, marginBottom: 4 }}>
-                                            <img src={IconFood} alt="food" style={{ width: 18, height: 18, flexShrink: 0 }} />
-                                            <span style={{ fontWeight: 600, fontSize: "16px" }}>{place.name}</span>
-                                        </div>
-                                        <div style={{ fontSize: "14px", color: "#777", margin: "4px 0" }}>
-                                            {"⭐".repeat(Math.round(place.rating))} {place.rating}/5
-                                        </div>
-                                        <div style={{ fontSize: "14px", color: "#999", fontStyle: "italic", marginBottom: "8px" }}>
-                                            {place.review}
-                                        </div>
-                                        <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 4 }}>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowPinListModal(false);
-                                                    handleOpenEdit(place.id);
-                                                }}
-                                                style={{
-                                                    background: "#f0f0ff",
-                                                    color: "#6060c0",
-                                                    border: "1px solid #c0c0f0",
-                                                    borderRadius: 4,
-                                                    width: 30, height: 30,
-                                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                                    cursor: "pointer",
-                                                }}
-                                                title="แก้ไข"
-                                            >
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeletePlace(place.id);
-                                                }}
-                                                style={{
-                                                    background: "none",
-                                                    border: "none",
-                                                    padding: 0,
-                                                    width: 30, height: 30,
-                                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                                    cursor: "pointer",
-                                                }}
-                                                title="ลบ"
-                                            >
-                                                <img src={IconMinusRed} alt="ลบ" style={{ width: 24, height: 24 }} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            {places.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
-                                <div style={{ textAlign: "center", color: "#aaa", padding: "32px" }}>
-                                    ไม่พบร้าน
-                                </div>
-                            )}
                         </div>
                     </div>
                     <div
