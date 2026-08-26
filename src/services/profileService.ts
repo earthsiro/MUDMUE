@@ -86,22 +86,22 @@ export const updateProfile = (
     return list.map((p) => (p.id === id ? { ...p, name, displayName, level, updateDate: now } : p));
 };
 
-export const getDetailProfile = (uuid: string): PlayerProfile | undefined => {
-    const profiles = loadProfiles();
-    return profiles.find((p) => p.uuid === uuid);
-};
-export const getDetailProfileByField = <K extends keyof PlayerProfile>(
-    uuid: string,
-    field: K
-): PlayerProfile[K] | undefined => {
-    const profiles = loadProfiles();
-    const profile = profiles.find((p) => p.uuid === uuid);
-    if (!profile) return undefined;
-    return profile[field];
+/** Load all profiles once as a uuid -> profile map (avoids repeated localStorage reads in lists). */
+export const loadProfileMap = (): Record<string, PlayerProfile> => {
+    return loadProfiles().reduce<Record<string, PlayerProfile>>((acc, profile) => {
+        acc[profile.uuid] = profile;
+        return acc;
+    }, {});
 };
 
 export const deleteProfile = (list: PlayerProfile[], id: number): PlayerProfile[] => {
     return list.filter((p) => p.id !== id);
+};
+
+/** Win/Lose ratio as a display string. "-" when there are no losses yet. */
+export const formatWinLoseRatio = (win: number, lose: number): string => {
+    if (lose > 0) return (win / lose).toFixed(2);
+    return win > 0 ? "-" : "0";
 };
 
 const genKey = (length = 6) => {
