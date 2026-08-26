@@ -1,0 +1,1877 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!--
+  Mudmue Chok — UX Design Review (ก่อน / หลัง)
+  ============================================
+  Design reference สำหรับหน้า Mudmue Chok (route /chok, โค้ดอยู่ที่ src/pages/mudmue-pick/).
+  เป็นคู่กับ "WW Draft Tool - App (standalone).html" ซึ่งเป็น design reference ของหน้า WuWa.
+
+  ใช้ไฟล์นี้เป็น: role map ของสี, สเกล typography, ขนาดจุดกด, และ pattern ของ
+  form control / badge / responsive nav ที่หน้า Chok ต้องยึดตาม — เปิดด้วยเบราว์เซอร์
+  แล้ว hover / กด / Tab ดูสถานะจริงได้ทุกตัวในคอลัมน์ "หลัง".
+
+  ขอบเขต: คงพาสเทล Mudmue เดิม (น้ำเงิน #0000ff = action หลัก, ชมพู #ff1493 = destructive,
+  เทา = neutral) และคงสีทีมแดง/น้ำเงินไว้เป็น "สีข้อมูล" — ไม่ใช่การเปลี่ยนธีม.
+
+  ที่มา: review ตามคำแนะนำ UX 7 ข้อ, ส.ค. 2026. ไฟล์นี้คือสเปกที่อนุมัติ/รออนุมัติ
+  ไม่ใช่โค้ดจริง — โค้ดจริงอยู่ใน src/pages/mudmue-pick/.
+  ยังรอเคาะ 2 เรื่อง (ดูท้ายหน้า): สี badge WIN, ลำดับ Level.
+
+  หมายเหตุ: หน้านี้อ่าน prefers-color-scheme ของเครื่อง (สว่าง/มืด) ส่วนแผงตัวอย่าง
+  ล็อกพื้นสว่างไว้เสมอ เพราะแอปจริงมีแต่โหมดสว่าง.
+-->
+<style>
+    body {
+        margin: 0;
+    }
+</style>
+<title>Mudmue Chok — UX Design Review (ก่อน / หลัง)</title>
+
+<style>
+    :root {
+        --paper: #faf9fb;
+        --card: #ffffff;
+        --ink: #1c1b22;
+        --muted: #6f6d7d;
+        --line: #e4e2ec;
+        --line-soft: #f0eef5;
+        --blue: #0000ff;
+        --blue-ink: #0000ff;
+        --pink: #ff1493;
+        --lilac: #cacaf0;
+        --ok-bg: #e9e9ff;
+
+        --f-body: "Noto Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+        --f-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --paper: #14131a;
+            --card: #1c1b24;
+            --ink: #ecebf2;
+            --muted: #9a97ab;
+            --line: #2e2c3a;
+            --line-soft: #24222d;
+            --blue-ink: #9d9dff;
+            --pink: #ff6bb5;
+            --ok-bg: #24243a;
+        }
+    }
+
+    :root[data-theme="dark"] {
+        --paper: #14131a;
+        --card: #1c1b24;
+        --ink: #ecebf2;
+        --muted: #9a97ab;
+        --line: #2e2c3a;
+        --line-soft: #24222d;
+        --blue-ink: #9d9dff;
+        --pink: #ff6bb5;
+        --ok-bg: #24243a;
+    }
+
+    :root[data-theme="light"] {
+        --paper: #faf9fb;
+        --card: #ffffff;
+        --ink: #1c1b22;
+        --muted: #6f6d7d;
+        --line: #e4e2ec;
+        --line-soft: #f0eef5;
+        --blue-ink: #0000ff;
+        --pink: #ff1493;
+        --ok-bg: #e9e9ff;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .page {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--f-body);
+        font-size: 15px;
+        line-height: 1.6;
+        margin: 0;
+        padding: 40px 24px 96px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px;
+    }
+
+    .wrap {
+        width: 100%;
+        max-width: 1080px;
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+    }
+
+    /* ---------- page header ---------- */
+
+    .masthead {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding-bottom: 28px;
+        border-bottom: 2px solid var(--line);
+    }
+
+    .eyebrow {
+        font-family: var(--f-mono);
+        font-size: 11.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+
+    .masthead h1 {
+        margin: 0;
+        font-size: clamp(28px, 4.4vw, 42px);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        font-weight: 800;
+        text-wrap: balance;
+    }
+
+    .masthead h1 .strike {
+        color: var(--muted);
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+        font-weight: 600;
+    }
+
+    .lede {
+        margin: 0;
+        max-width: 62ch;
+        color: var(--muted);
+        font-size: 15.5px;
+    }
+
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .chip {
+        font-family: var(--f-mono);
+        font-size: 11.5px;
+        letter-spacing: 0.03em;
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .chip.done {
+        border-color: color-mix(in srgb, var(--blue-ink) 45%, transparent);
+        color: var(--blue-ink);
+        background: color-mix(in srgb, var(--blue-ink) 8%, transparent);
+    }
+
+    /* ---------- item block ---------- */
+
+    .item {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .item-head {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 14px;
+        align-items: start;
+    }
+
+    .num {
+        font-family: var(--f-mono);
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--blue-ink);
+        border: 2px solid color-mix(in srgb, var(--blue-ink) 35%, transparent);
+        border-radius: 8px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        margin-top: 2px;
+    }
+
+    .item-head h2 {
+        margin: 0;
+        font-size: clamp(19px, 2.4vw, 23px);
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+        font-weight: 700;
+    }
+
+    .quote {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        border-left: 2px solid var(--line);
+        padding-left: 10px;
+    }
+
+    .compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    @media (max-width: 860px) {
+        .compare {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .pane {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .pane > figcaption {
+        font-family: var(--f-mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+    }
+
+    .pane > figcaption::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        background: currentColor;
+    }
+
+    .pane.after > figcaption {
+        color: var(--blue-ink);
+    }
+
+    /* The mockup panels stay on a light ground in both themes — the real app is
+       light-only, so a "screenshot" that flips would misrepresent it. */
+    .screen {
+        flex: 1;
+        background: #ffffff;
+        color: #1e1e28;
+        border: 1px solid #e2e0ea;
+        border-radius: 12px;
+        padding: 18px;
+        font-size: 14px;
+        overflow-x: auto;
+    }
+
+    .screen.dim {
+        background: #fbfbfd;
+    }
+
+    .screen-label {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8c8a99;
+        margin: 0 0 12px;
+    }
+
+    .notes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+        .notes {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .note {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 16px;
+        background: var(--card);
+    }
+
+    .note h4 {
+        margin: 0 0 6px;
+        font-family: var(--f-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .note ul {
+        margin: 0;
+        padding-left: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .note code,
+    .inline-code {
+        font-family: var(--f-mono);
+        font-size: 12.5px;
+        background: var(--line-soft);
+        border-radius: 4px;
+        padding: 1px 5px;
+    }
+
+    hr.sep {
+        width: 100%;
+        height: 1px;
+        border: 0;
+        background: var(--line);
+        margin: 0;
+    }
+
+    /* ---------- mockup: role swatches ---------- */
+
+    .role-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px dashed #eceaf2;
+    }
+
+    .role-row:last-child {
+        border-bottom: 0;
+    }
+
+    .role-swatch {
+        width: 34px;
+        height: 22px;
+        border-radius: 5px;
+        flex-shrink: 0;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .role-what {
+        font-weight: 600;
+        font-size: 13.5px;
+    }
+
+    .role-where {
+        color: #77758a;
+        font-size: 12.5px;
+        margin-left: auto;
+        text-align: right;
+        font-family: var(--f-mono);
+    }
+
+    .flag {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #fdeaf3;
+        color: #b0106a;
+        white-space: nowrap;
+    }
+
+    /* ---------- mockup: buttons (app palette) ---------- */
+
+    .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .m-btn {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 999px;
+        padding: 0 22px;
+        height: 44px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: #fff;
+        color: #1e1e28;
+        transition: box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+    }
+
+    .m-btn.primary {
+        background: #0000ff;
+        color: #fff;
+        border-color: #0000ff;
+    }
+
+    .m-btn.primary:hover {
+        background: #1a1aff;
+        box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.16);
+    }
+
+    .m-btn.primary:active {
+        background: #0000cc;
+        transform: translateY(1px);
+    }
+
+    .m-btn.secondary {
+        border-color: #c9c9d6;
+        color: #1e1e28;
+    }
+
+    .m-btn.secondary:hover {
+        border-color: #1e1e28;
+        background: #f4f4f8;
+    }
+
+    .m-btn.danger {
+        border-color: #ff1493;
+        color: #c00d70;
+    }
+
+    .m-btn.danger:hover {
+        background: #fdeaf3;
+    }
+
+    .m-btn.old-random {
+        border-color: #ff1493;
+        color: #ff1493;
+        background: #fff;
+    }
+
+    .m-btn.old-add {
+        border-color: #0000ff;
+        color: #0000ff;
+        background: #fff;
+    }
+
+    .m-btn:focus-visible {
+        outline: 3px solid #0000ff;
+        outline-offset: 2px;
+    }
+
+    .btn-tag {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        color: #8c8a99;
+        display: block;
+        margin-top: 4px;
+    }
+
+    /* ---------- mockup: hit targets ---------- */
+
+    .hit-strip {
+        display: flex;
+        gap: 22px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .hit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .hit .box {
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: #f4f4f8;
+        border: 1px dashed #b9b7c7;
+        color: #1e1e28;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+    .hit .box.s32 {
+        width: 32px;
+        height: 32px;
+    }
+
+    .hit .box.s36 {
+        width: 36px;
+        height: 36px;
+    }
+
+    .hit .box.s44 {
+        width: 44px;
+        height: 44px;
+        border-style: solid;
+        border-color: #0000ff;
+        background: #fff;
+    }
+
+    .hit .box.s44:hover {
+        background: #e9e9ff;
+    }
+
+    .hit .box.s44:active {
+        background: #d5d5ff;
+    }
+
+    .hit .box.s44:focus-visible {
+        outline: 3px solid #0000ff;
+        outline-offset: 2px;
+    }
+
+    .hit .box.s44.danger {
+        border-color: #ff1493;
+        color: #c00d70;
+    }
+
+    .hit .box.s44.danger:hover {
+        background: #fdeaf3;
+    }
+
+    .hit .cap {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        color: #8c8a99;
+        text-align: center;
+    }
+
+    .hit .cap b {
+        color: #1e1e28;
+    }
+
+    /* ---------- mockup: score / result ---------- */
+
+    .match {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        border: 1px solid #eceaf2;
+        border-radius: 10px;
+        padding: 16px;
+    }
+
+    .side {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .score {
+        font-size: 30px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+        position: relative;
+    }
+
+    .score.red {
+        color: #d81f4a;
+    }
+
+    .score.blue {
+        color: #0000ff;
+    }
+
+    .pname {
+        font-size: 17px;
+        font-weight: 600;
+    }
+
+    .pname small {
+        font-size: 11.5px;
+        font-weight: 400;
+        color: #77758a;
+    }
+
+    .vs {
+        font-family: var(--f-mono);
+        font-size: 12px;
+        color: #8c8a99;
+        letter-spacing: 0.1em;
+    }
+
+    .ghost-trophy {
+        position: absolute;
+        left: -34px;
+        top: -14px;
+        font-size: 54px;
+        opacity: 0.35;
+        pointer-events: none;
+        animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%,
+        100% {
+            transform: scale(0.85);
+        }
+        40% {
+            transform: scale(1.1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ghost-trophy {
+            animation: none;
+        }
+    }
+
+    .badge {
+        font-family: var(--f-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 4px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .badge.win {
+        background: #0000ff;
+        color: #fff;
+    }
+
+    .badge.win-alt {
+        background: #1e1e28;
+        color: #fff;
+    }
+
+    .badge.lose {
+        background: #f1f0f5;
+        color: #6f6d7d;
+    }
+
+    .badge.draw {
+        background: #fff;
+        color: #6f6d7d;
+        border: 1px solid #d5d3de;
+    }
+
+    /* ---------- mockup: level ---------- */
+
+    .lvl-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+    }
+
+    .lvl-table th {
+        text-align: left;
+        font-size: 11px;
+        font-family: var(--f-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8c8a99;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-bottom: 1px solid #eceaf2;
+    }
+
+    .lvl-table th.old {
+        color: #0000ff;
+        font-family: inherit;
+        font-size: 14px;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .lvl-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid #f4f3f7;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .lvl-table td.idx-old {
+        color: #ff1493;
+        font-weight: 700;
+    }
+
+    .lvl-table td.idx-new {
+        color: #8c8a99;
+        font-family: var(--f-mono);
+        font-size: 12px;
+    }
+
+    .lvl-chip {
+        font-family: var(--f-mono);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 6px;
+        background: #f1f0f5;
+        color: #3a3849;
+        border: 1px solid #e2e0ea;
+        cursor: help;
+    }
+
+    .legend {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px dashed #e2e0ea;
+        font-size: 12px;
+        color: #77758a;
+        font-family: var(--f-mono);
+    }
+
+    .legend .steps {
+        display: flex;
+        gap: 5px;
+    }
+
+    .legend .steps span {
+        padding: 2px 7px;
+        border-radius: 5px;
+        background: #f1f0f5;
+        color: #3a3849;
+        font-weight: 700;
+        font-size: 11.5px;
+    }
+
+    /* ---------- mockup: layout wireframe ---------- */
+
+    .wire {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .wire-title {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8c8a99;
+    }
+
+    .wire-frame {
+        border: 1px solid #dedce8;
+        border-radius: 8px;
+        padding: 8px;
+        display: flex;
+        gap: 8px;
+        background: #fbfbfd;
+    }
+
+    .wire-frame.col {
+        flex-direction: column;
+    }
+
+    .wire-nav {
+        background: #e9e9ff;
+        border: 1px solid #c9c9f5;
+        border-radius: 6px;
+        min-height: 76px;
+        width: 84px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px;
+    }
+
+    .wire-nav.row {
+        width: 100%;
+        min-height: 0;
+        flex-direction: row;
+    }
+
+    .wire-nav i {
+        display: block;
+        height: 12px;
+        border-radius: 3px;
+        background: #c9c9f5;
+        flex: 1;
+    }
+
+    .wire-nav i.on {
+        background: #0000ff;
+    }
+
+    .wire-body {
+        flex: 1;
+        min-height: 76px;
+        border-radius: 6px;
+        background: repeating-linear-gradient(135deg, #f1f0f5 0 6px, #fbfbfd 6px 12px);
+        border: 1px solid #e6e4ee;
+        display: grid;
+        place-items: center;
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        color: #8c8a99;
+        padding: 6px;
+        text-align: center;
+    }
+
+    .wire-dead {
+        background: #fdeaf3;
+        border: 1px dashed #f0a6cd;
+        color: #b0106a;
+    }
+
+    /* ---------- mockup: type scale ---------- */
+
+    .type-row {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 7px 0;
+        border-bottom: 1px dashed #f0eef5;
+    }
+
+    .type-row:last-child {
+        border-bottom: 0;
+    }
+
+    .type-row .meta {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        color: #8c8a99;
+        margin-left: auto;
+        white-space: nowrap;
+    }
+
+    .t-h1 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        line-height: 1.15;
+    }
+
+    .t-h2 {
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    .t-label {
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #6f6d7d;
+    }
+
+    .t-body {
+        font-size: 14px;
+    }
+
+    .t-data {
+        font-size: 30px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .t-cap {
+        font-size: 12px;
+        color: #77758a;
+    }
+
+    .t-flat {
+        font-weight: 400;
+    }
+
+    /* ---------- mockup: form controls ---------- */
+
+    .form-demo {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .seg {
+        display: inline-flex;
+        border: 1px solid #c9c9d6;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .seg label {
+        cursor: pointer;
+        padding: 0 18px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: #3a3849;
+        border-left: 1px solid #e2e0ea;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .seg label:first-of-type {
+        border-left: 0;
+    }
+
+    .seg input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .seg label:hover {
+        background: #f1f0f5;
+    }
+
+    .seg input:checked + span {
+        color: #fff;
+    }
+
+    .seg label:has(input:checked) {
+        background: #0000ff;
+        color: #fff;
+    }
+
+    .seg label:has(input:focus-visible) {
+        outline: 3px solid #0000ff;
+        outline-offset: 2px;
+    }
+
+    .switch-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 0 10px 0 4px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        width: fit-content;
+        transition: background 0.15s ease;
+    }
+
+    .check:hover {
+        background: #f4f4f8;
+    }
+
+    .check input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .check .mark {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 2px solid #a9a7ba;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        transition: background 0.12s ease, border-color 0.12s ease;
+    }
+
+    .check .mark::after {
+        content: "";
+        width: 10px;
+        height: 6px;
+        border-left: 2.5px solid #fff;
+        border-bottom: 2.5px solid #fff;
+        transform: rotate(-45deg) scale(0);
+        transition: transform 0.12s ease;
+    }
+
+    .check input:checked + .mark {
+        background: #0000ff;
+        border-color: #0000ff;
+    }
+
+    .check input:checked + .mark::after {
+        transform: rotate(-45deg) scale(1);
+    }
+
+    .check input:focus-visible + .mark {
+        outline: 3px solid #0000ff;
+        outline-offset: 2px;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-width: 260px;
+    }
+
+    .field > span {
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #6f6d7d;
+    }
+
+    .field select,
+    .field input[type="number"] {
+        font-family: inherit;
+        font-size: 14px;
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid #c9c9d6;
+        background: #fff;
+        color: #1e1e28;
+        appearance: none;
+    }
+
+    .field select {
+        background-image: linear-gradient(45deg, transparent 50%, #6f6d7d 50%),
+            linear-gradient(135deg, #6f6d7d 50%, transparent 50%);
+        background-position: calc(100% - 18px) 19px, calc(100% - 12px) 19px;
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+    }
+
+    .field select:hover,
+    .field input[type="number"]:hover {
+        border-color: #1e1e28;
+    }
+
+    .field select:focus-visible,
+    .field input[type="number"]:focus-visible {
+        outline: none;
+        border-color: #0000ff;
+        box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.18);
+    }
+
+    .native-note {
+        font-family: var(--f-mono);
+        font-size: 10.5px;
+        color: #8c8a99;
+        margin-top: 6px;
+    }
+
+    /* ---------- decision box ---------- */
+
+    .decide {
+        border: 2px solid color-mix(in srgb, var(--blue-ink) 35%, transparent);
+        border-radius: 12px;
+        padding: 20px 22px;
+        background: var(--card);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .decide h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .decide ol {
+        margin: 0;
+        padding-left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .opt-pair {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 6px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #ffffff;
+        border: 1px solid #e2e0ea;
+    }
+
+    .untouched {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 14px;
+    }
+
+    .untouched b {
+        color: var(--ink);
+    }
+</style>
+
+</head>
+<body>
+<div class="page">
+    <div class="wrap">
+        <header class="masthead">
+            <p class="eyebrow">Design review · รออนุมัติก่อนลงมือ</p>
+            <h1><span class="strike">MUDMUE Pick</span> → MUDMUE Chok<br />ปรับตามคำแนะนำ UX 7 ข้อ</h1>
+            <p class="lede">
+                คงพาสเทล Mudmue เดิมไว้ทั้งหมด (น้ำเงิน <span class="inline-code">#0000ff</span> = action หลัก,
+                ชมพู <span class="inline-code">#ff1493</span> = destructive, เทา = neutral) และทีมยังเป็น
+                แดง/น้ำเงินเหมือนเดิม เพราะเป็น "สีข้อมูล" ไม่ใช่ accent — งานนี้คือจัดบทบาทสีให้ชัด
+                ไม่ใช่เปลี่ยนธีม
+            </p>
+            <div class="chips">
+                <span class="chip done">✓ rename ป้าย + route /pick → /chok (ทำแล้ว)</span>
+                <span class="chip">7 ข้อด้านล่าง = รออนุมัติ</span>
+                <span class="chip">แผงตัวอย่างล็อกโหมดสว่างตามหน้าเว็บจริง</span>
+            </div>
+        </header>
+
+        <!-- ============ 1 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">1</span>
+                <div>
+                    <h2>แยกบทบาทสีให้มีความหมาย</h2>
+                    <p class="quote">accent ใช้เฉพาะ action หลัก/ไฮไลต์ผลลัพธ์ ไม่ใช่ระบายทุกที่แบบสุ่ม</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน — 3 สีทำ 7 หน้าที่ที่ไม่เกี่ยวกัน</figcaption>
+                    <div class="screen dim">
+                        <p class="screen-label">สีที่ใช้อยู่จริงในโค้ดวันนี้</p>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #fff; border-color: #ff1493"></span>
+                            <span class="role-what">ปุ่ม Random <span class="flag">action หลัก แต่เป็นชมพู</span></span>
+                            <span class="role-where">outline-secondary</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #fff; border-color: #0000ff"></span>
+                            <span class="role-what">ปุ่ม Add Existed Player</span>
+                            <span class="role-where">outline-primary</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #0000ff"></span>
+                            <span class="role-what">หัวตาราง Profile + เส้นคั่นทุกเส้น</span>
+                            <span class="role-where">text-[#0000ff]</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #ff1493"></span>
+                            <span class="role-what">เลขลำดับแถว <span class="flag">ตัวเลขเฉยๆ ไม่ใช่ action</span></span>
+                            <span class="role-where">th text-[#FF1493]</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #cacafb"></span>
+                            <span class="role-what">ปุ่ม Edit <span class="flag">contrast 1.4:1 — อ่านไม่ออก</span></span>
+                            <span class="role-where">text-[#CACAFB]</span>
+                        </div>
+                        <div class="btn-row" style="margin-top: 14px">
+                            <div>
+                                <button class="m-btn old-random" type="button">Random</button>
+                                <span class="btn-tag">action หลัก</span>
+                            </div>
+                            <div>
+                                <button class="m-btn old-add" type="button">Add Existed Player</button>
+                                <span class="btn-tag">action รอง</span>
+                            </div>
+                        </div>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง — 1 สี 1 บทบาท</figcaption>
+                    <div class="screen">
+                        <p class="screen-label">role map</p>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #0000ff"></span>
+                            <span class="role-what">Action หลัก / ผลลัพธ์ที่ชนะ</span>
+                            <span class="role-where">brand-blue</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #fff; border-color: #c9c9d6"></span>
+                            <span class="role-what">Action รอง</span>
+                            <span class="role-where">outline neutral</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #ff1493"></span>
+                            <span class="role-what">Destructive เท่านั้น (Delete, ลบผู้เล่น)</span>
+                            <span class="role-where">brand-pink</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: linear-gradient(90deg, #d81f4a 50%, #0000ff 50%)"></span>
+                            <span class="role-what">ข้อมูลทีม (คะแนน, ลูกขนไก่, ฝั่งสนาม)</span>
+                            <span class="role-where">team red / blue</span>
+                        </div>
+                        <div class="role-row">
+                            <span class="role-swatch" style="background: #f1f0f5; border-color: #d5d3de"></span>
+                            <span class="role-what">โครงสร้าง: หัวตาราง, เส้น, ลำดับแถว, meta</span>
+                            <span class="role-where">neutral ramp</span>
+                        </div>
+                        <div class="btn-row" style="margin-top: 14px">
+                            <div>
+                                <button class="m-btn primary" type="button">Random</button>
+                                <span class="btn-tag">action หลัก = ทึบน้ำเงิน</span>
+                            </div>
+                            <div>
+                                <button class="m-btn secondary" type="button">Add Existed Player</button>
+                                <span class="btn-tag">action รอง = outline เทา</span>
+                            </div>
+                            <div>
+                                <button class="m-btn danger" type="button">Delete</button>
+                                <span class="btn-tag">destructive</span>
+                            </div>
+                        </div>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>ปัญหาที่แก้</h4>
+                    <ul>
+                        <li>ปุ่มเด่นที่สุดในหน้าตอนนี้เป็น <b>ชมพู outline</b> ส่วนปุ่มรองเป็น <b>น้ำเงิน</b> — สลับบทบาทกัน</li>
+                        <li><code>text-[#CACAFB]</code> บนพื้นขาว contrast ≈ 1.4:1 (ต่ำกว่าเกณฑ์ 4.5:1)</li>
+                        <li>ชมพูใช้ทั้งเลขลำดับแถว และปุ่ม Delete — ตาแยกไม่ออกว่าอันไหนกดได้</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ไฟล์ที่แตะ</h4>
+                    <ul>
+                        <li><code>MudmueMatchmaker.tsx</code> — Random เป็น primary</li>
+                        <li><code>MudmueProfile.tsx</code> — หัวตาราง/ลำดับแถวเป็น neutral, Edit เป็น ink</li>
+                        <li><code>MudmueButton.tsx</code> — เพิ่ม tone <code>neutral</code> (ไม่แตะ theme เดิมที่หน้าอื่นใช้)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ 2 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">2</span>
+                <div>
+                    <h2>เพิ่มขนาดจุดกด ≥ 44px</h2>
+                    <p class="quote">ปุ่ม +/-, eye, trash, replay ทุกอันต้อง ≥44px เพื่อกดง่ายบน tablet</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน</figcaption>
+                    <div class="screen dim">
+                        <p class="screen-label">ลองกดดูได้ — เล็กกว่าเกณฑ์ทุกอัน</p>
+                        <div class="hit-strip">
+                            <div class="hit">
+                                <span class="box s32">+</span>
+                                <span class="cap"><b>32px</b><br />btn-sm</span>
+                            </div>
+                            <div class="hit">
+                                <span class="box s32">−</span>
+                                <span class="cap"><b>32px</b><br />btn-sm</span>
+                            </div>
+                            <div class="hit">
+                                <span class="box s36">👁</span>
+                                <span class="cap"><b>36px</b><br />&lt;img&gt; เปล่า</span>
+                            </div>
+                            <div class="hit">
+                                <span class="box s32">🗑</span>
+                                <span class="cap"><b>32px</b><br />btn-sm</span>
+                            </div>
+                            <div class="hit">
+                                <span class="box s32">↺</span>
+                                <span class="cap"><b>32px</b><br />&lt;img&gt; เปล่า</span>
+                            </div>
+                            <div class="hit">
+                                <span class="box s32">⚑</span>
+                                <span class="cap"><b>32px</b><br />&lt;img&gt; เปล่า</span>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            eye / replay / complete เป็น <code>&lt;img onClick&gt;</code> — ไม่มี focus, กด Tab ไม่ถึง,
+                            screen reader ไม่รู้ว่าเป็นปุ่ม
+                        </p>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง</figcaption>
+                    <div class="screen">
+                        <p class="screen-label">44 × 44 ทุกอัน + hover/pressed/focus (ลอง Tab ดู)</p>
+                        <div class="hit-strip">
+                            <div class="hit">
+                                <button class="box s44" type="button" aria-label="เพิ่มคะแนน">+</button>
+                                <span class="cap"><b>44px</b><br />+ คะแนน</span>
+                            </div>
+                            <div class="hit">
+                                <button class="box s44" type="button" aria-label="ลดคะแนน">−</button>
+                                <span class="cap"><b>44px</b><br />− คะแนน</span>
+                            </div>
+                            <div class="hit">
+                                <button class="box s44" type="button" aria-label="ซ่อนผู้เล่นจากการสุ่ม">👁</button>
+                                <span class="cap"><b>44px</b><br />ซ่อน/แสดง</span>
+                            </div>
+                            <div class="hit">
+                                <button class="box s44 danger" type="button" aria-label="ลบผู้เล่น">🗑</button>
+                                <span class="cap"><b>44px</b><br />ลบ</span>
+                            </div>
+                            <div class="hit">
+                                <button class="box s44" type="button" aria-label="แข่งใหม่">↺</button>
+                                <span class="cap"><b>44px</b><br />แข่งใหม่</span>
+                            </div>
+                            <div class="hit">
+                                <button class="box s44" type="button" aria-label="จบแมตช์">⚑</button>
+                                <span class="cap"><b>44px</b><br />จบแมตช์</span>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            เปลี่ยนเป็น <code>&lt;button&gt;</code> จริงพร้อม <code>aria-label</code> — ไอคอน PNG เดิมยังใช้ต่อ
+                            แค่ครอบด้วยปุ่ม 44px
+                        </p>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>เกณฑ์</h4>
+                    <ul>
+                        <li>WCAG 2.5.8 (AA) ขอ 24px, Apple/Material ขอ 44/48px — ใช้ <b>44px</b> ตามที่พี่สั่ง</li>
+                        <li>ปุ่ม +/− ใน ScoreStepper อยู่ติดกันแนวตั้ง → เพิ่ม gap 4px กันกดพลาด</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ไฟล์ที่แตะ</h4>
+                    <ul>
+                        <li><code>ScoreStepper.tsx</code> (+/−)</li>
+                        <li><code>MudmueMatchmaker.tsx</code> (eye, trash, add, reset)</li>
+                        <li><code>MudmueHistory.tsx</code> (replay), <code>MudmueDashboard.tsx</code> (complete)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ 3 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">3</span>
+                <div>
+                    <h2>ใช้ badge แทนถ้วยรางวัล</h2>
+                    <p class="quote">ผลแพ้ชนะใน History ควรเป็น badge สีตามระบบ (accent = ชนะ, neutral = แพ้)</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน</figcaption>
+                    <div class="screen dim">
+                        <p class="screen-label">trophy.png 129px เต้นอยู่หลังตัวเลขคะแนน</p>
+                        <div class="match">
+                            <div class="side">
+                                <span class="score red"><span class="ghost-trophy">🏆</span>21</span>
+                                <span class="pname">Earth <small>(สิโรรัตน์)</small></span>
+                            </div>
+                            <span class="vs">VS</span>
+                            <div class="side">
+                                <span class="pname">Nueng <small>(หนึ่ง)</small></span>
+                                <span class="score blue">18</span>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            ถ้วยซ้อนทับเลข (z-index 0 หลัง span z-2), เต้นไม่หยุด, และ
+                            <code>@media (max-width:1200px) { display:none }</code> — จอเล็กกว่านั้นไม่รู้เลยว่าใครชนะ
+                        </p>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง</figcaption>
+                    <div class="screen">
+                        <p class="screen-label">badge ตามระบบสี — เห็นผลได้ทุกขนาดจอ</p>
+                        <div class="match">
+                            <div class="side">
+                                <span class="badge win">WIN</span>
+                                <span class="score red">21</span>
+                                <span class="pname">Earth <small>(สิโรรัตน์)</small></span>
+                            </div>
+                            <span class="vs">VS</span>
+                            <div class="side">
+                                <span class="pname">Nueng <small>(หนึ่ง)</small></span>
+                                <span class="score blue">18</span>
+                                <span class="badge lose">LOSE</span>
+                            </div>
+                        </div>
+                        <div class="match" style="margin-top: 10px">
+                            <div class="side">
+                                <span class="badge draw">DRAW</span>
+                                <span class="score red">15</span>
+                                <span class="pname">Ploy</span>
+                            </div>
+                            <span class="vs">VS</span>
+                            <div class="side">
+                                <span class="pname">Bank</span>
+                                <span class="score blue">15</span>
+                                <span class="badge draw">DRAW</span>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            เสมอ (<code>TIED</code> ในโค้ดปัจจุบัน) ได้ badge neutral แบบ outline —
+                            ตอนนี้เคสเสมอไม่แสดงอะไรเลย
+                        </p>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>ปัญหาที่แก้</h4>
+                    <ul>
+                        <li>อ่านผลได้ทุก breakpoint (ของเดิมหายใต้ 1200px)</li>
+                        <li>เลิก animation ที่วนไม่จบใน list ยาว — คนละเรื่องกับความสนุกในหน้า Dashboard</li>
+                        <li>เคสเสมอมีสถานะของตัวเอง</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ไฟล์ที่แตะ</h4>
+                    <ul>
+                        <li><code>ScoreStepper.tsx</code> — <code>showTrophy</code> → <code>result?: "win"|"lose"|"draw"</code></li>
+                        <li><code>MudmueHistory.tsx</code> — ส่ง result จาก <code>d.winner</code></li>
+                        <li>Dashboard ไม่ส่ง result (แมตช์ยังไม่จบ) → ไม่มี badge เหมือนเดิม</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ 4 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">4</span>
+                <div>
+                    <h2>Level มีคำอธิบาย</h2>
+                    <p class="quote">Level ใน Profile (S, BG) ควรมี tooltip/legend บอกความหมาย ไม่ใช่โชว์ code ดิบ</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน</figcaption>
+                    <div class="screen dim">
+                        <table class="lvl-table">
+                            <thead>
+                                <tr>
+                                    <th class="old"></th>
+                                    <th class="old">Name</th>
+                                    <th class="old">Level</th>
+                                    <th class="old">Win/Lose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="idx-old">1</td>
+                                    <td>Earth</td>
+                                    <td>S</td>
+                                    <td>12/8</td>
+                                </tr>
+                                <tr>
+                                    <td class="idx-old">2</td>
+                                    <td>Nueng</td>
+                                    <td>BG</td>
+                                    <td>4/11</td>
+                                </tr>
+                                <tr>
+                                    <td class="idx-old">3</td>
+                                    <td>Ploy</td>
+                                    <td>P</td>
+                                    <td>9/9</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="native-note">ตัวอักษรเปล่า ไม่มีที่ไหนบอกว่าเรียงจากอ่อนไปเก่งยังไง</p>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง — ชี้ที่ chip เพื่อดู tooltip</figcaption>
+                    <div class="screen">
+                        <table class="lvl-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ชื่อ</th>
+                                    <th>Level</th>
+                                    <th>Win/Lose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="idx-new">1</td>
+                                    <td>Earth</td>
+                                    <td><span class="lvl-chip" title="มือ S — ระดับที่ 3 จาก 7 (อ่อน → เก่ง)">S</span></td>
+                                    <td>12/8</td>
+                                </tr>
+                                <tr>
+                                    <td class="idx-new">2</td>
+                                    <td>Nueng</td>
+                                    <td><span class="lvl-chip" title="มือ BG — ระดับที่ 1 จาก 7 (อ่อนที่สุด)">BG</span></td>
+                                    <td>4/11</td>
+                                </tr>
+                                <tr>
+                                    <td class="idx-new">3</td>
+                                    <td>Ploy</td>
+                                    <td><span class="lvl-chip" title="มือ P — ระดับที่ 4 จาก 7 (อ่อน → เก่ง)">P</span></td>
+                                    <td>9/9</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="legend">
+                            <span>อ่อน</span>
+                            <span>→</span>
+                            <span class="steps">
+                                <span>BG</span><span>N</span><span>S</span><span>P</span><span>C</span><span>B</span
+                                ><span>A</span>
+                            </span>
+                            <span>→</span>
+                            <span>เก่ง</span>
+                        </div>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>ขอบเขต (ตามที่พี่เลือก)</h4>
+                    <ul>
+                        <li>บอกแค่ <b>ลำดับ</b> ไม่ใส่คำบรรยายที่ผมไม่รู้จริง</li>
+                        <li>ลำดับมาจาก <code>LEVEL_LIST</code> ที่มีอยู่ (BG, N, S, P, C, B, A ตามลำดับใน array)</li>
+                        <li>legend โผล่ใน Profile + ใน modal เลือกผู้เล่นของ Matchmaker (ที่มีคอลัมน์ Level ด้วย)</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ต้องเช็คกับพี่</h4>
+                    <ul>
+                        <li>
+                            ลำดับใน array ปัจจุบันคือ BG → N → S → P → C → B → A — ถ้าลำดับจริงไม่ใช่แบบนี้
+                            บอกได้ ผมแก้ทั้ง legend และ tooltip ที่เดียว
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ 5 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">5</span>
+                <div>
+                    <h2>Layout ตอบสนอง</h2>
+                    <p class="quote">จาก fixed desktop layout เป็น grid ที่ยุบ sidebar เป็นแถบ tab แนวนอนบนจอแคบกว่า 900px</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน</figcaption>
+                    <div class="screen dim">
+                        <div class="wire">
+                            <span class="wire-title">≥ 900px</span>
+                            <div class="wire-frame">
+                                <div class="wire-nav">
+                                    <i class="on"></i><i></i><i></i><i></i>
+                                </div>
+                                <div class="wire-body">การ์ดแมตช์ w-[360px] + h-[182px] ตายตัว</div>
+                            </div>
+                            <span class="wire-title">&lt; 900px</span>
+                            <div class="wire-frame col">
+                                <div class="wire-nav row"><i class="on"></i><i></i><i></i><i></i></div>
+                                <div class="wire-body wire-dead">
+                                    การ์ดยังกว้าง w-[200px]+w-[200px]+gap 64px → ล้นขอบ / เลื่อนซ้ายขวา
+                                </div>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            เมนูมี 2 ชุดใน DOM (<code>SideMenuContainer</code> + <code>TabMenuContainer</code>) สลับกันด้วย
+                            <code>display:none</code> — แก้ที่เดียวลืมอีกที่เสมอ, และ <code>TabMenu</code> ใช้
+                            radio ชื่อเดียวกันทั้งเว็บ
+                        </p>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง</figcaption>
+                    <div class="screen">
+                        <div class="wire">
+                            <span class="wire-title">≥ 900px</span>
+                            <div class="wire-frame">
+                                <div class="wire-nav"><i class="on"></i><i></i><i></i><i></i></div>
+                                <div class="wire-body">grid: 1fr, การ์ดยืดตามพื้นที่ (ไม่ fix ความสูง)</div>
+                            </div>
+                            <span class="wire-title">&lt; 900px — nav ชุดเดียวกัน reflow เป็นแถวนอน</span>
+                            <div class="wire-frame col">
+                                <div class="wire-nav row"><i class="on"></i><i></i><i></i><i></i></div>
+                                <div class="wire-body">การ์ดยุบเป็นแนวตั้ง คะแนนอยู่บน ชื่ออยู่ล่าง ไม่ล้น</div>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            nav ชุดเดียว (แบบเดียวกับหน้า WuWa ที่ทำไว้แล้ว) เปลี่ยน
+                            <code>flex-direction</code> ที่ 900px — เลิกซ้ำ DOM, active state ที่เดียว
+                        </p>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>ปัญหาที่แก้</h4>
+                    <ul>
+                        <li>ความกว้างตายตัว <code>w-[200px] lg:w-[360px]</code> + gap 64px ทำให้การ์ดล้นบนแท็บเล็ตแนวตั้ง</li>
+                        <li><code>h-[182px]</code> ใน History ตัดเนื้อหาทิ้งเมื่อชื่อยาว/เล่นคู่</li>
+                        <li><code>h-[800px]</code>, <code>h-[1000px]</code> ใน Matchmaker เหลือช่องว่างเปล่ามหาศาลบนมือถือ</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ไฟล์ที่แตะ</h4>
+                    <ul>
+                        <li><code>MudmuePickPage.tsx</code> — nav ชุดเดียว + grid</li>
+                        <li><code>components/TabMenu.tsx</code> — ถูกแทนที่ (จะลบถ้าไม่มีที่อื่นใช้)</li>
+                        <li>ทั้ง 4 หน้าย่อย — ถอดความกว้าง/ความสูงตายตัว</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ 6 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">6</span>
+                <div>
+                    <h2>ลำดับชั้น typography</h2>
+                    <p class="quote">แยก heading/label/body ด้วยขนาด-น้ำหนักต่างกัน ไม่ใช่ตัวหนังสือขนาดใกล้เคียงกันหมด</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน — น้ำหนัก 400 เกือบทั้งหมด</figcaption>
+                    <div class="screen dim">
+                        <div class="type-row">
+                            <span style="font-size: 24px" class="t-flat">MUDMUE Chok</span>
+                            <span class="meta">24px / 400</span>
+                        </div>
+                        <div class="type-row">
+                            <span style="font-size: 18px" class="t-flat">Matchmaker</span>
+                            <span class="meta">18px / 400</span>
+                        </div>
+                        <div class="type-row">
+                            <span style="font-size: 16px" class="t-flat">Level</span>
+                            <span class="meta">16px / 400</span>
+                        </div>
+                        <div class="type-row">
+                            <span style="font-size: 16px" class="t-flat">Earth (สิโรรัตน์)</span>
+                            <span class="meta">16px / 400</span>
+                        </div>
+                        <div class="type-row">
+                            <span style="font-size: 28px" class="t-flat">Earth</span>
+                            <span class="meta">28px / 400 — ชื่อในการ์ด</span>
+                        </div>
+                        <div class="type-row">
+                            <span style="font-size: 32px" class="t-flat">21</span>
+                            <span class="meta">32px / 400 — คะแนน</span>
+                        </div>
+                        <div class="type-row">
+                            <span style="font-size: 12px" class="t-flat">Member: 8 , Available: 6</span>
+                            <span class="meta">12px / 400</span>
+                        </div>
+                        <p class="native-note">
+                            8 ขนาด (12/16/18/20/24/28/32) แต่ทุกอันน้ำหนักเท่ากัน — ชื่อผู้เล่น 28px แข่งกับคะแนน 32px
+                            ว่าอันไหนสำคัญกว่า
+                        </p>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง — 6 บทบาท ต่างทั้งขนาดและน้ำหนัก</figcaption>
+                    <div class="screen">
+                        <div class="type-row">
+                            <span class="t-h1">MUDMUE Chok</span>
+                            <span class="meta">26px / 800 · page</span>
+                        </div>
+                        <div class="type-row">
+                            <span class="t-h2">Matchmaker</span>
+                            <span class="meta">19px / 700 · section</span>
+                        </div>
+                        <div class="type-row">
+                            <span class="t-label">Level</span>
+                            <span class="meta">11.5px / 600 · label</span>
+                        </div>
+                        <div class="type-row">
+                            <span class="t-body">Earth <span style="color: #77758a; font-size: 12px">(สิโรรัตน์)</span></span>
+                            <span class="meta">14px / 400 · body</span>
+                        </div>
+                        <div class="type-row">
+                            <span class="t-data">21</span>
+                            <span class="meta">30px / 700 tabular · data</span>
+                        </div>
+                        <div class="type-row">
+                            <span class="t-cap">สมาชิก 8 · พร้อมสุ่ม 6</span>
+                            <span class="meta">12px / 400 เทา · caption</span>
+                        </div>
+                        <p class="native-note">
+                            คะแนนเป็นตัวเลขที่หนาที่สุด ชื่อผู้เล่นถอยลงมาเป็น body — สายตาไปที่คะแนนก่อนตามที่ควร
+                        </p>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>วิธีทำ</h4>
+                    <ul>
+                        <li>เพิ่ม type tokens ในไฟล์สไตล์ของหน้า Chok (ไม่แตะ <code>index.css</code> ที่หน้าอื่นใช้ร่วม)</li>
+                        <li>ยังเป็น Noto Sans ตัวเดิม — ต่างกันด้วยขนาด/น้ำหนัก/สี ไม่เพิ่มฟอนต์ใหม่</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ไฟล์ที่แตะ</h4>
+                    <ul>
+                        <li>ไฟล์ใหม่ <code>mudmue-pick/chok.styles.ts</code> — tokens + primitives ของหน้านี้</li>
+                        <li>ทั้ง 4 หน้าย่อย — เลิก <code>text-[28px]</code> กระจัดกระจาย</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ 7 ============ -->
+        <section class="item">
+            <div class="item-head">
+                <span class="num">7</span>
+                <div>
+                    <h2>Interaction state ที่จับต้องได้</h2>
+                    <p class="quote">hover/focus/pressed ต้องเห็นชัด ไม่ใช่ browser default (native select/checkbox เดิม)</p>
+                </div>
+            </div>
+            <div class="compare">
+                <figure class="pane before">
+                    <figcaption>ก่อน — native ทั้งหมด</figcaption>
+                    <div class="screen dim">
+                        <div class="form-demo">
+                            <div>
+                                <label style="margin-right: 18px"
+                                    ><input type="radio" name="pa-old" checked /> 2 Player</label
+                                >
+                                <label><input type="radio" name="pa-old" /> 4 Player</label>
+                            </div>
+                            <label><input type="checkbox" /> Skip Animation</label>
+                            <label><input type="checkbox" /> Hide Result From List</label>
+                            <label style="display: flex; gap: 10px; align-items: center">
+                                Mode
+                                <select style="padding: 6px; border: 1px solid #999; border-radius: 4px">
+                                    <option>Random</option>
+                                </select>
+                            </label>
+                            <label style="display: flex; gap: 10px; align-items: center">
+                                Times
+                                <input type="number" value="1" style="padding: 6px; border: 1px solid #999; width: 90px" />
+                            </label>
+                        </div>
+                        <p class="native-note">
+                            hit area 13–16px, hover ไม่มี, focus เป็นวงของเบราว์เซอร์, ป้าย "Mode" ที่ disabled อยู่แต่ดูเหมือนกดได้
+                        </p>
+                    </div>
+                </figure>
+                <figure class="pane after">
+                    <figcaption>หลัง — ลองกด / ลอง Tab ดูได้เลย</figcaption>
+                    <div class="screen">
+                        <div class="form-demo">
+                            <div class="seg">
+                                <label><input type="radio" name="pa-new" checked /><span>2 Player</span></label>
+                                <label><input type="radio" name="pa-new" /><span>4 Player</span></label>
+                            </div>
+                            <div class="switch-row">
+                                <label class="check"
+                                    ><input type="checkbox" /><span class="mark"></span>ข้ามอนิเมชันรูเล็ต</label
+                                >
+                                <label class="check"
+                                    ><input type="checkbox" checked /><span class="mark"></span>ซ่อนคนที่สุ่มได้ออกจากลิสต์</label
+                                >
+                            </div>
+                            <div class="field">
+                                <span>จำนวนรอบ</span>
+                                <input type="number" value="1" min="1" />
+                            </div>
+                            <div class="field">
+                                <span>โหมดจับคู่</span>
+                                <select>
+                                    <option>สุ่ม (Random)</option>
+                                    <option disabled>ตามฝีมือ (เร็วๆ นี้)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="native-note">
+                            2/4 Player เป็น segmented control (44px), checkbox เป็นแถวกดได้ทั้งแถว, ตัวเลือกที่ยังไม่เปิด
+                            บอกตรงๆ ว่า "เร็วๆ นี้" แทน dropdown ที่ disabled ทั้งอัน
+                        </p>
+                    </div>
+                </figure>
+            </div>
+            <div class="notes">
+                <div class="note">
+                    <h4>สถานะที่ให้ครบทุกตัว</h4>
+                    <ul>
+                        <li><b>hover</b> — พื้นเปลี่ยน / ขอบเข้มขึ้น</li>
+                        <li><b>focus-visible</b> — ring น้ำเงิน 3px (เห็นชัดเวลากด Tab)</li>
+                        <li><b>pressed</b> — พื้นเข้มขึ้น + ขยับลง 1px</li>
+                        <li><b>disabled</b> — จาง + <code>cursor:not-allowed</code> + บอกเหตุผล</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <h4>ไฟล์ที่แตะ</h4>
+                    <ul>
+                        <li><code>chok.styles.ts</code> — Segmented, Check, Field, Select</li>
+                        <li><code>MudmueMatchmaker.tsx</code>, <code>MudmueProfile.tsx</code> — เปลี่ยนมาใช้</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr class="sep" />
+
+        <!-- ============ decisions ============ -->
+        <section class="decide">
+            <h2>2 เรื่องที่อยากให้พี่เคาะก่อน</h2>
+            <ol>
+                <li>
+                    <b>สี badge "WIN"</b> — คำแนะนำบอก "accent = ชนะ" ซึ่งในพาสเทลคือน้ำเงิน แต่ทีมน้ำเงินก็ใช้
+                    <span class="inline-code">#0000ff</span> เหมือนกัน เลยอาจอ่านเหมือน "ฝั่งน้ำเงินชนะ" ทั้งที่จริงคือฝั่งแดงชนะ
+                    <div class="opt-pair">
+                        <span><span class="badge win">WIN</span> <span class="btn-tag">ก. น้ำเงิน = accent ตามคำแนะนำตรงๆ</span></span>
+                        <span><span class="badge win-alt">WIN</span> <span class="btn-tag">ข. ink ทึบ = เป็นกลาง ไม่ชนสีทีม</span></span>
+                    </div>
+                    ผมเอนไปทาง <b>ข.</b> เพราะ badge อยู่ติดกับคะแนนของทีมที่มีสีอยู่แล้ว — แต่พี่เคาะ
+                </li>
+                <li>
+                    <b>ของสนุกในหน้า Dashboard</b> — หมัดชนกัน (punch-left/right), aura เต้น, ตอนกดจบแมตช์
+                    <span class="untouched" style="margin-top: 6px">
+                        ผมจะ <b>ไม่แตะ</b> ทั้งหมด รวมถึงรูเล็ตและอนิเมชันผลการสุ่ม — เป็นบุคลิกของเว็บ ไม่ใช่ปัญหา UX
+                        ที่พี่ยกมา ถ้าอยากให้จัดด้วยบอกได้
+                    </span>
+                </li>
+            </ol>
+        </section>
+
+        <section class="untouched">
+            <h4 style="margin: 0; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted)">
+                นอกขอบเขต
+            </h4>
+            <span>· หน้า Chim / WuWa / Home — ไม่แตะ</span>
+            <span>· localStorage keys (<span class="inline-code">mudmue_profile</span>, <span class="inline-code">mudmue_match</span>) — คงเดิม ข้อมูลเก่าอยู่ครบ</span>
+            <span>· โฟลเดอร์ <span class="inline-code">src/pages/mudmue-pick/</span> และชื่อคอมโพเนนต์ — คงเดิมตามที่พี่เลือก</span>
+        </section>
+    </div>
+</div>
+</body>
+</html>

@@ -1,57 +1,47 @@
-import styled, { keyframes } from "styled-components";
+import {
+    ChokIconButton,
+    ChokReadout,
+    ChokResult,
+    ChokResultBadge,
+    chokResultLabel,
+} from "../../chok.styles";
 
 import IconMinusBlue from "../../../../assets/icon-minus-blue.png";
 import IconMinusRed from "../../../../assets/icon-minus-red.png";
 import IconPlusBlue from "../../../../assets/icon-plus-blue.png";
 import IconPlusRed from "../../../../assets/icon-plus-red.png";
-import IconTrophy from "../../../../assets/trophy.png";
+import styled from "styled-components";
 
-const ScoreStepperContainer = styled.div<{ trophy: boolean }>`
+const ScoreStepperContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    position: relative;
     justify-content: center;
-    ${({ trophy }) => (trophy ? "width:135px" : "width:135px")};
-`;
-const TrophyContainer = styled.div`
-    position: absolute;
-    top: 62%;
-    left: 0%;
-    z-index: 0;
-    transform: translate(0%, -50%);
-    @media (max-width: 1200px) {
-        display: none;
-    }
-    @media (max-width: 900px) {
-        display: none;
-    }
-`;
-const trophyGrow = keyframes`
-  0% { transform: scale(0.8); }
-  35% { transform: scale(1.2); }
-  100% { transform: scale(0.8); }
-`;
-
-const AnimatedTrophy = styled.img<{ faded?: boolean }>`
-    animation: ${trophyGrow} 1.2s ease infinite;
-    position: relative;
-    width: 129px;
-    height: 129px;
-    opacity: ${({ faded }) => (faded ? 0.35 : 1)};
+    gap: 6px;
+    /* Never narrower than the 44px buttons it holds; on a phone the court gets
+       the rest of the row. */
+    min-width: 44px;
 `;
 
 interface ScoreStepperProps {
     team: "blue" | "red";
     score: number;
     callback: (score: number) => void;
+    /** Read-only: hides the +/- buttons (History). */
     isDisplay?: boolean;
     className?: string;
-    showTrophy?: boolean;
+    /**
+     * Finished-match outcome for this side. Shown as a badge under the score —
+     * it replaced a 129px animated trophy PNG that overlapped the number and
+     * was hidden below 1200px, so on a tablet nobody could tell who won.
+     */
+    result?: ChokResult;
 }
 
 export const ScoreStepper = (props: ScoreStepperProps) => {
-    const { team = "blue", score = 0, callback = () => {}, isDisplay = false, className, showTrophy = false } = props;
+    const { team = "blue", score = 0, callback = () => {}, isDisplay = false, className, result } = props;
+    const sideLabel = team === "red" ? "ฝั่งแดง" : "ฝั่งน้ำเงิน";
+
     const handleIncrement = () => {
         callback(score + 1);
     };
@@ -60,25 +50,30 @@ export const ScoreStepper = (props: ScoreStepperProps) => {
             callback(score - 1);
         }
     };
+
     return (
-        <ScoreStepperContainer className={className} trophy={showTrophy}>
+        <ScoreStepperContainer className={className}>
             {!isDisplay && (
-                <button className="btn btn-sm btn-square btn-circle btn-ghost right-2 top-2 " onClick={handleIncrement}>
-                    <img src={team === "blue" ? IconPlusBlue : IconPlusRed} alt="plus-blue"></img>
-                </button>
+                <ChokIconButton type="button" onClick={handleIncrement} aria-label={`เพิ่มคะแนน${sideLabel}`}>
+                    <img src={team === "blue" ? IconPlusBlue : IconPlusRed} alt="" />
+                </ChokIconButton>
             )}
-            <div className="font-not text-[32px]">
-                <span className="relative z-[2] ">{score}</span>
-                {showTrophy && (
-                    <TrophyContainer>
-                        <AnimatedTrophy src={IconTrophy} alt="trophy" faded={isDisplay} />
-                    </TrophyContainer>
-                )}
-            </div>
+
+            <ChokReadout $team={team} aria-label={`คะแนน${sideLabel} ${score}`}>
+                {score}
+            </ChokReadout>
+
+            {result && <ChokResultBadge $result={result}>{chokResultLabel[result]}</ChokResultBadge>}
+
             {!isDisplay && (
-                <button className="btn btn-sm btn-square btn-circle btn-ghost right-2 top-2 " onClick={handleDecrement}>
-                    <img src={team === "blue" ? IconMinusBlue : IconMinusRed} alt="plus-blue"></img>
-                </button>
+                <ChokIconButton
+                    type="button"
+                    onClick={handleDecrement}
+                    disabled={score === 0}
+                    aria-label={`ลดคะแนน${sideLabel}`}
+                >
+                    <img src={team === "blue" ? IconMinusBlue : IconMinusRed} alt="" />
+                </ChokIconButton>
             )}
         </ScoreStepperContainer>
     );

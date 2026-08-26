@@ -44,19 +44,21 @@ export const Roulette: React.FC<RouletteColumnProps> = ({
     }, [isClear]);
 
     return (
-        <div className="roulette">
-            <div
-                className="roulette-strip"
-                style={{
-                    transform: `translateY(-${offset}px)`,
-                    transition,
-                }}
-            >
-                {extendedPlayers.map((name, idx) => (
-                    <div className="item" key={idx}>
-                        {name}
-                    </div>
-                ))}
+        <div className="roulette-window">
+            <div className="roulette">
+                <div
+                    className="roulette-strip"
+                    style={{
+                        transform: `translateY(-${offset}px)`,
+                        transition,
+                    }}
+                >
+                    {extendedPlayers.map((name, idx) => (
+                        <div className="item" key={idx}>
+                            {name}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

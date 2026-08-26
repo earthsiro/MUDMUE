@@ -13,6 +13,32 @@
     gap: 10px;
 }
 
+/* กรอบเลือกคนต้องยึดกับล้อของตัวเอง — เดิม .roulette เป็น static แล้วให้ ::before
+   ไปอ้าง relative ของ wrapper ข้างนอก กรอบจึงหลุดไปอยู่บนสุดของหน้าทันทีที่ layout
+   เปลี่ยน และตอนเล่น 4 คนกรอบของทุกล้อก็ทับกันอยู่กลาง wrapper อันเดียว
+   ต้องเป็น wrapper ที่ไม่ overflow:hidden ไม่งั้นเงาของกรอบจะถูกตัด */
+.roulette-window {
+    position: relative;
+    width: 100px;
+    flex-shrink: 0;
+}
+
+.roulette-window::before {
+    content: "";
+    position: absolute;
+    border-radius: 8px;
+    top: 112px; /* รายการกลาง เริ่มที่ 100px */
+    left: 50%;
+    transform: translate(-50%, 0%);
+    height: 80px;
+    width: 120%;
+    z-index: 2;
+    pointer-events: none;
+    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.5);
+    -moz-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.5);
+}
+
 .roulette {
     padding-top: 2px;
     width: 100px;
@@ -25,22 +51,6 @@
     display: flex;
     flex-direction: column;
 }
-.roulette::before {
-    content: "";
-    position: absolute;
-    border-radius: 8px;
-    top: 112px; /* รายการกลาง เริ่มที่ 100px */
-    left: 50%;
-    transform: translate(-50%, 0%);
-    right: 0;
-    height: 80px;
-    width: 120%;
-    z-index: 2;
-    pointer-events: none;
-    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.5);
-    -webkit-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.5);
-    -moz-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.5);
-}
 
 .item {
     width: 100px;
@@ -49,6 +59,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    overflow: hidden;
     background-image: linear-gradient(#cacaf0, #ffffff, #fbc0e0 100%);
     border-bottom: 1px solid #ccc;
+}
+
+/* Phones: 4 wheels at 100px each (โหมด 4 คน) overflow a 360px screen, so the
+   wheels get narrower. Item HEIGHT must stay 100px — Roulette.tsx computes the
+   stop offset as `index * 100`, so changing it would land on the wrong name. */
+@media (max-width: 600px) {
+    .roulette-window,
+    .roulette,
+    .item {
+        width: 68px;
+    }
+    .item {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 380px) {
+    .roulette-window,
+    .roulette,
+    .item {
+        width: 58px;
+    }
+    .item {
+        font-size: 13px;
+    }
 }
