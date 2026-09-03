@@ -168,6 +168,15 @@ const APP_MENU: AppMenuItem[] = [
     },
     {
         id: 2,
+        icon: "🧮",
+        title: "MUDMUE Han",
+        desc: "หารค่าคอร์ท & ค่าลูกแบดหลังเล่นจบ",
+        cta: "หารเลย →",
+        path: "/han",
+        accent: "var(--brand-blue-soft)",
+    },
+    {
+        id: 3,
         icon: "⚔️",
         title: "WuWa MudMue",
         desc: "Ban & Pick ทัวร์นาเมนต์ Wuthering Waves",
@@ -176,7 +185,7 @@ const APP_MENU: AppMenuItem[] = [
         accent: "#c2a3ff",
     },
     {
-        id: 3,
+        id: 4,
         icon: "📖",
         title: "Story Book",
         desc: "คลัง component ของเว็บ",

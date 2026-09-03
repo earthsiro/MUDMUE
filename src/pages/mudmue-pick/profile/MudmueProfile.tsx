@@ -21,11 +21,13 @@ import {
     formatWinLoseRatio,
     loadProfiles,
     saveProfiles,
+    setProfileArchived,
     updateProfile,
 } from "../../../services/profileService";
 import React, { useEffect, useState } from "react";
 
 import { IconUserPlus } from "../../../components/icons";
+import { countSessionsWithProfile } from "../../../services/hanService";
 import { formatDateTime } from "../../../helpers/formatDate";
 import styled from "styled-components";
 
@@ -92,6 +94,11 @@ const levelHint = (level: string) => {
 
 export const MudmueProfile = () => {
     const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
+    /**
+     * จำนวนบิลของ MUDMUE Han ที่คนนี้ติดอยู่ — มากกว่า 0 เมื่อไหร่คือลบไม่ได้ ต้องซ่อนแทน
+     * ไม่งั้นบิลเก่าจะเหลือแต่ uuid ที่ไม่มีเจ้าของ
+     */
+    const [linkedBills, setLinkedBills] = useState(0);
     const [formProfile, setFormProfile] = useState<Partial<PlayerProfile>>({
         id: undefined,
         name: "",
@@ -112,10 +119,19 @@ export const MudmueProfile = () => {
     };
     const handleClickDeleteProfileModal = (data: PlayerProfile) => {
         setFormProfile(data);
+        setLinkedBills(countSessionsWithProfile(data.uuid));
         openModal("confirm_modal");
     };
     const onDelete = (id: number) => {
         const newList = deleteProfile(profiles, id);
+        setProfiles(newList);
+        saveProfiles(newList);
+        closeModal("confirm_modal");
+    };
+
+    /** ทางออกแทนการลบสำหรับคนที่มีประวัติผูกอยู่ — หายจากลิสต์เลือกคน แต่บิลเก่ายังอ่านได้ */
+    const onArchive = (id: number) => {
+        const newList = setProfileArchived(profiles, id, true);
         setProfiles(newList);
         saveProfiles(newList);
         closeModal("confirm_modal");
@@ -194,6 +210,7 @@ export const MudmueProfile = () => {
                                         {profile.displayName !== profile.name && (
                                             <ChokCaption>&nbsp;({profile.name})</ChokCaption>
                                         )}
+                                        {profile.archived && <ChokCaption>&nbsp;· ซ่อนอยู่</ChokCaption>}
                                     </td>
                                     <td>
                                         {profile.level ? (
@@ -328,18 +345,34 @@ export const MudmueProfile = () => {
             <dialog id="confirm_modal" className="modal">
                 <div className="modal-box w-11/12 max-w-md" style={{ background: chok.surface }}>
                     <ModalBox>
-                        <ModalHeading>ลบโปรไฟล์นี้?</ModalHeading>
+                        <ModalHeading>{linkedBills > 0 ? "ลบไม่ได้ — ซ่อนแทนไหม?" : "ลบโปรไฟล์นี้?"}</ModalHeading>
                         <span>
-                            จะลบ <strong>{formProfile.displayName || formProfile.name}</strong> ออกจากรายชื่อ —
-                            ประวัติแมตช์ที่เคยบันทึกไว้ยังอยู่
+                            {linkedBills > 0 ? (
+                                <>
+                                    <strong>{formProfile.displayName || formProfile.name}</strong> ติดอยู่ใน{" "}
+                                    {linkedBills} บิลของ MUDMUE Han — ลบแล้วบิลเก่าจะอ้างถึงคนที่ไม่มีอยู่จริง
+                                    ซ่อนแทนได้ คนนี้จะหายจากลิสต์ "คนมาวันนี้" แต่บิลเก่ายังอ่านได้ครบ
+                                </>
+                            ) : (
+                                <>
+                                    จะลบ <strong>{formProfile.displayName || formProfile.name}</strong> ออกจากรายชื่อ —
+                                    ประวัติแมตช์ที่เคยบันทึกไว้ยังอยู่
+                                </>
+                            )}
                         </span>
                         <ModalActions>
                             <ChokButton type="button" $tone="neutral" onClick={() => closeModal("confirm_modal")}>
                                 ยกเลิก
                             </ChokButton>
-                            <ChokButton type="button" $tone="danger" onClick={() => onDelete(formProfile.id!)}>
-                                ลบ
-                            </ChokButton>
+                            {linkedBills > 0 ? (
+                                <ChokButton type="button" $tone="primary" onClick={() => onArchive(formProfile.id!)}>
+                                    ซ่อนโปรไฟล์
+                                </ChokButton>
+                            ) : (
+                                <ChokButton type="button" $tone="danger" onClick={() => onDelete(formProfile.id!)}>
+                                    ลบ
+                                </ChokButton>
+                            )}
                         </ModalActions>
                     </ModalBox>
                 </div>

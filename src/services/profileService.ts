@@ -35,6 +35,11 @@ export type PlayerProfile = {
     lose: number;
     createDate: string;
     updateDate: string;
+    /**
+     * ซ่อนจากลิสต์ "เลือกคนมาวันนี้" ของ MUDMUE Han แต่ประวัติเก่ายังอ้างถึงได้
+     * เป็น optional เพราะโปรไฟล์ที่บันทึกไว้ก่อนหน้านี้ไม่มีฟิลด์นี้ — undefined = ยังไม่ถูกซ่อน
+     */
+    archived?: boolean;
 };
 
 export const loadProfiles = (): PlayerProfile[] => {
@@ -97,6 +102,39 @@ export const loadProfileMap = (): Record<string, PlayerProfile> => {
 export const deleteProfile = (list: PlayerProfile[], id: number): PlayerProfile[] => {
     return list.filter((p) => p.id !== id);
 };
+
+/**
+ * เพิ่มคนแบบเร็วจากหน้าอื่น (MUDMUE Han) ที่มีแค่ชื่อ — ยังไม่ต้องรู้ระดับมือ
+ * ใช้ชื่อเดียวกันทั้ง `name` และ `displayName` แก้ทีหลังได้ที่หน้า Profile ของ Chok
+ * ถ้าชื่อนี้มีอยู่แล้ว (ไม่สนตัวพิมพ์/ช่องว่างหัวท้าย) จะคืนโปรไฟล์เดิมแทนการสร้างซ้ำ
+ */
+export const addProfileByName = (
+    list: PlayerProfile[],
+    name: string
+): { list: PlayerProfile[]; profile: PlayerProfile } => {
+    const trimmed = name.trim();
+    const existing = list.find(
+        (p) => p.name.trim().toLowerCase() === trimmed.toLowerCase() ||
+            p.displayName.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing) return { list, profile: existing };
+
+    const nextList = addProfile(list, trimmed, trimmed, "");
+    return { list: nextList, profile: nextList[nextList.length - 1] };
+};
+
+/** ซ่อน/เลิกซ่อนโปรไฟล์ — ใช้แทนการลบเมื่อมีประวัติผูกอยู่ */
+export const setProfileArchived = (
+    list: PlayerProfile[],
+    id: number,
+    archived: boolean
+): PlayerProfile[] => {
+    const now = new Date().toISOString();
+    return list.map((p) => (p.id === id ? { ...p, archived, updateDate: now } : p));
+};
+
+/** คนที่ยังใช้งานอยู่ — ลิสต์เลือกคนใหม่ทุกที่ควรอ่านผ่านตัวนี้ */
+export const activeProfiles = (list: PlayerProfile[]): PlayerProfile[] => list.filter((p) => !p.archived);
 
 /** Win/Lose ratio as a display string. "-" when there are no losses yet. */
 export const formatWinLoseRatio = (win: number, lose: number): string => {

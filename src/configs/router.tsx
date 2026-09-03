@@ -2,6 +2,10 @@ import { FoodMapPage } from "../pages/mudmue-chim/MudmueChimPage";
 import { HomePage } from "../pages/home/HomePage";
 import { MainLayout } from "../pages/MainLayout";
 import { MudmueDashboard } from "../pages/mudmue-pick/dashboard/MudmueDashboard";
+import { MudmueHanCalculator } from "../pages/mudmue-han/calculator/MudmueHanCalculator";
+import { MudmueHanHistory } from "../pages/mudmue-han/history/MudmueHanHistory";
+import { MudmueHanPage } from "../pages/mudmue-han/MudmueHanPage";
+import { MudmueHanSettings } from "../pages/mudmue-han/settings/MudmueHanSettings";
 import { MudmueHistory } from "../pages/mudmue-pick/history/MudmueHistory";
 import { MudmueMatchmaker } from "../pages/mudmue-pick/matchmaker/MudmueMatchmaker";
 import { MudmuePickPage } from "../pages/mudmue-pick/MudmuePickPage";
@@ -36,6 +40,16 @@ export const routes = [
           { path: "history", element: <MudmueHistory /> },
           { path: "dashboard", element: <MudmueDashboard /> },
           { path: "profile", element: <MudmueProfile /> },
+        ],
+      },
+      {
+        path: "han",
+        element: <MudmueHanPage />,
+        children: [
+          { index: true, element: <Navigate to="calculator" replace /> },
+          { path: "calculator", element: <MudmueHanCalculator /> },
+          { path: "history", element: <MudmueHanHistory /> },
+          { path: "settings", element: <MudmueHanSettings /> },
         ],
       },
       {
