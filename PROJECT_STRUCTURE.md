@@ -2,6 +2,8 @@
 
 โปรเจครวม mini-apps ส่วนตัว
 
+> อยากรู้ว่าแต่ละเมนูใช้ทำอะไร ดูที่ [MANUAL.md](MANUAL.md) — คู่มือการใช้งานของทุกแอป
+
 ---
 
 ## 📁 Directory Structure
@@ -12,7 +14,8 @@ mudmue-web/
 │   └── .claude/                      # Design references (เปิดด้วยเบราว์เซอร์ได้เลย)
 │       ├── WW Draft Tool - App (standalone).html          # ธีม Modernist ของหน้า WuWa
 │       ├── Mudmue Chok - UX Design Review (standalone).html # role map สี/type/hit target ของหน้า Chok
-│       └── ww-draft-tool-task-plan.md
+│       ├── ww-draft-tool-task-plan.md
+│       └── mudmue-han-badminton-cost-splitter-plan.md      # สเปกของ MUDMUE Han
 │
 ├── src/
 │   ├── assets/                       # รูปภาพ, icons
@@ -58,7 +61,21 @@ mudmue-web/
 │   │   │   ├── MudmueChimPage.tsx
 │   │   │   └── components/           # FoodMap, Sidebar, mockPlace
 │   │   │
-│   │   └── ww-draft/                 # ⚔️ App 3 - Wuthering Waves Ban & Pick
+│   │   ├── mudmue-han/               # 🧮 App 3 - หารค่าคอร์ท/ค่าลูกแบด
+│   │   │   ├── MudmueHanPage.tsx     # Layout + Tab menu (คำนวณ/ประวัติ/ตั้งค่า)
+│   │   │   ├── han.styles.ts         # primitives เฉพาะ Han (ยืม token ของ Chok)
+│   │   │   ├── context/
+│   │   │   │   ├── hanContext.ts     # context + useHan hook
+│   │   │   │   └── HanProvider.tsx   # state ของบิล + persist draft
+│   │   │   ├── components/           # CourtSection, CourtBoard, TierDeck,
+│   │   │   │                         # ShuttleSection, PeopleSection,
+│   │   │   │                         # AttendeeOverrides, SummarySection,
+│   │   │   │                         # QrModal, NumberField, CountStepper
+│   │   │   ├── calculator/MudmueHanCalculator.tsx
+│   │   │   ├── history/MudmueHanHistory.tsx
+│   │   │   └── settings/MudmueHanSettings.tsx
+│   │   │
+│   │   └── ww-draft/                 # ⚔️ App 4 - Wuthering Waves Ban & Pick
 │   │       ├── WWDraftPage.tsx       # Layout + Side/Tab menu
 │   │       ├── ww-draft.styles.ts    # ธีมมืดเฉพาะแอปนี้ + styled primitives
 │   │       ├── context/
@@ -74,10 +91,12 @@ mudmue-web/
 │   │
 │   ├── services/
 │   │   ├── matchService.ts           # CRUD match (localStorage)
-│   │   ├── profileService.ts         # CRUD player profile (localStorage)
+│   │   ├── profileService.ts         # CRUD player profile ที่ Chok + Han ใช้ร่วมกัน
+│   │   ├── hanService.ts             # บิล/ประวัติ/ตั้งค่าของ Han (localStorage)
 │   │   └── wwDraftService.ts         # WW pools/match/timer + Excel import-export
 │   │
 │   ├── helpers/
+│   │   ├── hanCalc.ts                # สูตรหารค่าคอร์ท/ค่าลูก (pure functions)
 │   │   └── wwDraftEngine.ts          # state machine ของ ban/pick (pure functions)
 │   │
 │   ├── main.tsx                      # Entry point
@@ -126,6 +145,39 @@ Match         { id, sessionId, player1, player2, completed, winner? }
 Place   { id, name, lat, lng, category, addedAt }
 Review  { id, placeId, rating, comment, images[], visitedAt }
 ```
+
+---
+
+### 🧮 MUDMUE Han ✅
+> หารค่าคอร์ทและค่าลูกแบดหลังเล่นจบ — route `/han` · สเปก [แผนงาน](public/.claude/mudmue-han-badminton-cost-splitter-plan.md)
+
+| Feature | รายละเอียด |
+|---------|-----------|
+| ค่าคอร์ท | "ป้ายราคา ชม." เป็นของแยกชิ้น ลาก (หรือแตะเลือกแล้วแตะคอร์ท) ไปแปะบนคอร์ทที่ใช้ช่วงราคานั้น — ป้ายเดียวแปะได้หลายคอร์ท คอร์ทเดียวแปะได้หลายป้าย |
+| ค่าลูก | ราคา/ลูก + stepper จำนวนที่ใช้จริง หารเท่ากันโดย default |
+| คนมาวันนี้ | เลือกจาก Profile กลางชุดเดียวกับ MUDMUE Chok เพิ่มชื่อใหม่แล้ว sync กลับ |
+| ปรับยอดเฉพาะคน | ใส่ชั่วโมงจริง/จำนวนลูกจริงรายคน ที่เหลือหารเท่าเฉพาะกลุ่มที่ไม่ระบุ |
+| สรุปผล | breakdown ต่อคน ปัดขึ้นเสมอ ส่วนต่างเข้ากองกลาง + warning แบบไม่บล็อก |
+| QR รับเงิน | อัปโหลดรูป QR พร้อมเพย์ครั้งเดียวในแท็บตั้งค่า (ย่อเหลือ 640px ก่อนเก็บ) |
+| ประวัติ | บันทึกบิลเป็น JSON เปิดกลับมาแก้ได้ |
+
+**Data Model** — ดู [src/types/han.ts](src/types/han.ts)
+```
+RateTier      { id, label, pricePerHour, hours }
+HanCourt      { id, index, tierIds[] }
+AttendeeEntry { profileUuid, name, courtHours|null, shuttleCount|null }
+HanSession    { id, date, title, tiers[], courts[],
+                shuttlePricePerPiece, shuttleUsedCount, attendees[], savedAt? }
+HanSettings   { paymentQrImage }
+```
+
+**localStorage keys**
+```
+mudmue_han_draft | mudmue_han_sessions | mudmue_han_settings
+```
+
+> หมายเหตุ: `PlayerProfile` มีฟิลด์ `archived?` เพิ่มเข้ามาเพื่องานนี้ — คนที่ติดอยู่ในบิลของ Han
+> จะลบไม่ได้ หน้า Profile ของ Chok จะเสนอให้ "ซ่อน" แทน
 
 ---
 
