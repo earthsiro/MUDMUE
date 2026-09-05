@@ -3,6 +3,7 @@ import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
     createCourt,
     createEmptySession,
+    createShuttle,
     createTier,
     loadDraft,
     loadHanSettings,
@@ -10,7 +11,7 @@ import {
     saveHanSettings,
     upsertSession,
 } from "../../../services/hanService";
-import type { HanSession, HanSettings, RateTier } from "../../../types/han";
+import type { HanSession, HanSettings, RateTier, ShuttleBrand } from "../../../types/han";
 
 import { HanContext } from "./hanContext";
 import { calculateSession } from "../../../helpers/hanCalc";
@@ -146,13 +147,39 @@ export const HanProvider = ({ children }: { children: ReactNode }) => {
 
     /* ---- ลูกแบด ---------------------------------------------------- */
 
-    const setShuttlePrice = useCallback(
-        (price: number) => patchSession((s) => ({ ...s, shuttlePricePerPiece: Math.max(0, price) })),
+    const addShuttle = useCallback(() => {
+        patchSession((s) => ({ ...s, shuttles: [...s.shuttles, createShuttle()] }));
+    }, [patchSession]);
+
+    /** ตัวเลขทุกช่องของลูกแบดติดลบไม่ได้ — ตัดที่ 0 ตั้งแต่ตรงนี้ที่เดียว */
+    const updateShuttle = useCallback(
+        (shuttleId: string, patch: Partial<Omit<ShuttleBrand, "id">>) => {
+            patchSession((s) => ({
+                ...s,
+                shuttles: s.shuttles.map((brand) =>
+                    brand.id === shuttleId
+                        ? {
+                              ...brand,
+                              ...patch,
+                              ...(patch.pricePerTube !== undefined && {
+                                  pricePerTube: Math.max(0, patch.pricePerTube),
+                              }),
+                              ...(patch.piecesPerTube !== undefined && {
+                                  piecesPerTube: Math.max(0, patch.piecesPerTube),
+                              }),
+                              ...(patch.usedCount !== undefined && { usedCount: Math.max(0, patch.usedCount) }),
+                          }
+                        : brand
+                ),
+            }));
+        },
         [patchSession]
     );
 
-    const setShuttleCount = useCallback(
-        (count: number) => patchSession((s) => ({ ...s, shuttleUsedCount: Math.max(0, count) })),
+    const removeShuttle = useCallback(
+        (shuttleId: string) => {
+            patchSession((s) => ({ ...s, shuttles: s.shuttles.filter((brand) => brand.id !== shuttleId) }));
+        },
         [patchSession]
     );
 
@@ -271,8 +298,9 @@ export const HanProvider = ({ children }: { children: ReactNode }) => {
             detachTierAt,
             pickedTierId,
             setPickedTierId,
-            setShuttlePrice,
-            setShuttleCount,
+            addShuttle,
+            updateShuttle,
+            removeShuttle,
             profiles,
             reloadProfiles,
             toggleAttendee,
@@ -298,8 +326,9 @@ export const HanProvider = ({ children }: { children: ReactNode }) => {
             attachTier,
             detachTierAt,
             pickedTierId,
-            setShuttlePrice,
-            setShuttleCount,
+            addShuttle,
+            updateShuttle,
+            removeShuttle,
             profiles,
             reloadProfiles,
             toggleAttendee,

@@ -112,6 +112,25 @@ export const createMatch = (players: PlayerDataType[], serviceSide: string): Mat
     return newList;
 };
 
+/**
+ * บันทึกความคืบหน้าระหว่างแข่ง (คะแนน + ฝั่งเสิร์ฟ) โดยไม่แตะ `winner`
+ * และไม่ยุ่งกับสถิติของโปรไฟล์ — ของเดิมคะแนนอยู่แต่ใน state ของหน้า Dashboard
+ * รีเฟรชหรือสลับแท็บกลับมาแล้วคะแนนหายหมด
+ *
+ * ตั้งใจไม่ขยับ `updateDate` เพราะการ์ดหน้า Dashboard เอาไปโชว์เป็นเวลาของแมตช์
+ * ไม่งั้นตัวเลขจะกระตุกทุกครั้งที่กดคะแนน
+ */
+export const updateMatchProgress = (
+    id: number,
+    players: PlayerDataType[],
+    serviceSide: string
+): MatchDataType[] => {
+    const list = loadHistories();
+    const newList = list.map((h) => (h.id === id && !h.winner ? { ...h, player: players, serviceSide } : h));
+    saveHistories(newList);
+    return newList;
+};
+
 export const updateMatch = (
     id: number,
     players: PlayerDataType[],
@@ -120,6 +139,10 @@ export const updateMatch = (
 ): MatchDataType[] => {
     const list = loadHistories();
     const now = new Date().toISOString();
+
+    /* กันกดจบแมตช์ซ้ำ — ถ้าแมตช์นี้จบไปแล้วต้องไม่บวก win/lose ให้โปรไฟล์อีกรอบ
+       สถิติที่บวกเกินย้อนกลับไม่ได้ เพราะไม่มีที่ไหนเก็บว่าแต้มไหนมาจากแมตช์อะไร */
+    if (list.some((h) => h.id === id && h.winner)) return list;
     const newList = list.map((h) =>
         h.id === id ? { ...h, player: players, serviceSide, winner, updateDate: now, finishedDate: now } : h
     );
@@ -147,6 +170,13 @@ export const updateMatch = (
 
     return newList;
 };
+
+/**
+ * ใช้เป็นตัวกันลบโปรไฟล์ — แมตช์ที่ยังไม่จบและอ้างถึงคนนี้อยู่ พอกดจบแมตช์
+ * จะหาโปรไฟล์ไม่เจอแล้วข้ามการอัปเดต win/lose ไปเงียบ ๆ
+ */
+export const countUnfinishedMatchesWithProfile = (profileUuid: string): number =>
+    loadHistories().filter((match) => !match.winner && match.player.some((p) => p.uuid === profileUuid)).length;
 
 // ---------------------------------------------------------------------------
 // Async API layer — simulates HTTP calls (swap for real fetch() when ready)

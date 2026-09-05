@@ -68,10 +68,10 @@ const Attempts = styled.span`
     color: ${wwTheme.textDim};
 `;
 
-const Note = styled.p`
+const Note = styled.p<{ $tone?: "warn" }>`
     margin: 8px 0 0;
     font-size: 12px;
-    color: ${wwTheme.textDim};
+    color: ${({ $tone }) => ($tone === "warn" ? wwTheme.warn : wwTheme.textDim)};
 `;
 
 export const BossRollPanel = () => {
@@ -79,16 +79,38 @@ export const BossRollPanel = () => {
     if (!match) return null;
 
     const rolled = match.bossPoolRolled;
-    const canRoll = bosses.length >= 1;
+    /**
+     * สุ่มบอสใหม่ได้เฉพาะก่อนเริ่มตี — พอมีผลการตีบันทึกไว้แล้ว การสุ่มใหม่จะเขียนทับ
+     * ลำดับบอสและรีเซ็ตบอสปัจจุบันกลับไปตัวแรก ทั้งที่ `battleLog` ยังถือ `bossIndex`
+     * ชุดเดิมอยู่ จำนวนครั้งที่ลอง ชีวิตตัวละคร และตรรกะแพ้ทั้งคู่จะชี้ไปที่บอสผิดตัวหมด
+     */
+    const battleStarted = match.battleLog.length > 0;
+    const canRoll = bosses.length >= 1 && !battleStarted;
 
     return (
         <WWPanel>
             <div className="flex items-center justify-between gap-3 mb-2">
                 <WWPanelTitle style={{ margin: 0 }}>Boss Order</WWPanelTitle>
-                <WWButton type="button" tone="primary" onClick={rollBossPool} disabled={!canRoll}>
+                <WWButton
+                    type="button"
+                    tone="primary"
+                    onClick={rollBossPool}
+                    disabled={!canRoll}
+                    title={
+                        battleStarted
+                            ? "เริ่มบันทึกผลการตีไปแล้ว — สุ่มบอสใหม่ตอนนี้จะทำให้ผลที่บันทึกไว้ชี้ผิดตัว"
+                            : undefined
+                    }
+                >
                     {rolled.length ? "สุ่มใหม่" : `สุ่มบอส ${BOSS_ROLL_COUNT} ตัว`}
                 </WWButton>
             </div>
+
+            {battleStarted && (
+                <Note $tone="warn">
+                    ⚠ บันทึกผลการตีไปแล้ว — ล็อกลำดับบอสไว้ ถ้าต้องการชุดใหม่ให้เริ่มแมตช์ใหม่
+                </Note>
+            )}
 
             {rolled.length === 0 ? (
                 <Note>

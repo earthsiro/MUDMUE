@@ -285,8 +285,15 @@ export const MudmueMatchmaker = () => {
     const [profileList, setProfileList] = useState<PlayerProfile[]>([]);
     const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]); // array ของ uuid
 
+    /** รอบเวียนนี้ต้องดึงคนที่ซ่อนไว้กลับมาเติมทีม — ใช้ตอนซ่อนคนที่สุ่มได้จนคนพร้อมสุ่มไม่พอ */
+    const [rotationRestarted, setRotationRestarted] = useState(false);
+
     const availableCount = players.filter((p) => !p.hide).length;
-    const notEnoughPlayers = availableCount < option.playerAmount;
+    /* คนที่ซ่อนไว้ยังถูกดึงกลับมาเติมได้ถ้าคนพร้อมสุ่มไม่พอ — ปุ่มจึงตายก็ต่อเมื่อทั้งลิสต์ยังไม่ถึงขนาดทีม */
+    const notEnoughPlayers = players.length < option.playerAmount;
+    const willReuseHidden = availableCount < option.playerAmount && players.length >= option.playerAmount;
+    /* เศษของรอบนี้ = คนที่เหลือไม่ครบทีม จะถูกยกไปตั้งต้นรอบถัดไป */
+    const leftOverPerSpin = availableCount % option.playerAmount;
 
     const handleChangeMode = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedValue(event.target.value);
@@ -323,24 +330,47 @@ export const MudmueMatchmaker = () => {
             return prevPlayers.map((player) => (player.id === p.id ? { ...player, hide: !player.hide } : player));
         });
     };
-    const handleClickCloseResultModal = () => {
+    /**
+     * ซ่อนคนที่เพิ่งถูกสุ่มได้ออกจากลิสต์ — เทียบด้วย id ของแถว ไม่ใช่ชื่อ
+     * ของเดิมเทียบชื่อ คนชื่อซ้ำกันเลยโดนซ่อนยกแผงทั้งที่ถูกสุ่มได้คนเดียว
+     */
+    const hideDrawnPlayers = (rounds: RoundResultMatchmakerProps[], restartRotation: boolean) => {
+        const drawnIds = new Set(rounds.flatMap((round) => round.players.map((p) => p.id)));
+        setPlayers((prevPlayers) =>
+            prevPlayers.map((player) => {
+                /* เริ่มรอบเวียนใหม่: คนที่ไม่ได้ลงรอบนี้กลับมาพร้อมสุ่ม จะได้เป็นคิวถัดไป
+                   ไม่งั้นพอทุกคนถูกซ่อนครบ ลิสต์จะกลายเป็นว่างเปล่าทั้งที่ยังเล่นกันอยู่ */
+                if (restartRotation) return { ...player, hide: !drawnIds.has(player.id) };
+                return drawnIds.has(player.id) ? { ...player, hide: true } : player;
+            })
+        );
+    };
+
+    /**
+     * ปิดผลการสุ่มรอบนี้ — ต้องล้าง `results` เสมอ ไม่ว่าจะออกทางปุ่มปิดหรือปุ่มยืนยัน
+     * ของเดิมปุ่มยืนยันไม่ล้าง พอสุ่มรอบถัดไปแล้วกดยืนยันอีกที รอบเก่าจะถูกสร้าง
+     * เป็นแมตช์ซ้ำเข้า Dashboard อีกชุด
+     */
+    const finishResults = () => {
         setIsCloseResultModal(true);
+        if (option.hideFromList) hideDrawnPlayers(results, rotationRestarted);
         setResults([]);
         setIsShowResultModal(false);
-        if (option.hideFromList) {
-            const resultNames = results.flatMap((round) => round.players.map((p) => p.name));
-            setPlayers((prevPlayers) =>
-                prevPlayers.map((player) => (resultNames.includes(player.name) ? { ...player, hide: true } : player))
-            );
-        }
         resultModalRef.current?.close();
+    };
+
+    const handleClickCloseResultModal = () => {
+        finishResults();
     };
     // -- ใช้วิธี แบ่งคนเป็น pool แล้วสุ่มจาก pool ออกมาเท่ากับ optionPlayerAmount ในกรณีที่คนเหลือก็จะเอาคนคนเล่นมา random ใหม่
     // --(ถ้าอยาก random แล้ว recycle pool จนครบจำนวนรอบที่ user เลือก
     const spin = () => {
         setIsCloseResultModal(false);
         const pool = players.filter((p) => !p.hide);
-        const groupList = spinRoundsWithCarryOver(pool, option.playerAmount, option.times);
+        /* คนที่ซ่อนไว้เป็นชั้นสำรอง — ถูกดึงกลับมาเฉพาะตอนคนพร้อมสุ่มไม่พอตั้งทีม */
+        const reserve = players.filter((p) => p.hide);
+        setRotationRestarted(pool.length < option.playerAmount && reserve.length > 0);
+        const groupList = spinRoundsWithCarryOver(pool, option.playerAmount, option.times, reserve);
         const allResults: RoundResultMatchmakerProps[] = groupList.map((group: PlayerProps[], i: number) => ({
             id: results.length + i + 1,
             players: group,
@@ -423,17 +453,19 @@ export const MudmueMatchmaker = () => {
             return createMatchAsync(matchPlayers, serviceSide);
         });
         await Promise.all(createPromises);
-        setIsShowResultModal(false);
-        resultModalRef.current?.close();
+        finishResults();
     };
 
     // The wheel strip is built from the visible players, so the landing index has
     // to be looked up in that same list — using the full list landed on the wrong
     // name as soon as anyone was hidden.
     const visiblePlayers = players.filter((p) => !p.hide);
-    const wheelPlayers = visiblePlayers.map((p) => p.displayName ?? p.name);
-    const wheelTarget = (slot: number) =>
-        visiblePlayers.findIndex((p) => p.name === results?.[0]?.players?.[slot]?.name);
+    /* วงล้อต้องมีชื่อชุดเดียวกับที่ใช้สุ่มจริง — ตอนคนพร้อมสุ่มไม่พอ คนที่ซ่อนไว้ก็ถูกดึงมาด้วย
+       ไม่งั้นหาชื่อที่สุ่มได้ในวงล้อไม่เจอ (index -1) แล้ววงล้อจะไปหยุดผิดชื่อ */
+    const wheelPool = visiblePlayers.length >= option.playerAmount ? visiblePlayers : players;
+    const wheelPlayers = wheelPool.map((p) => p.displayName ?? p.name);
+    /* เทียบด้วย id ไม่ใช่ชื่อ — คนชื่อซ้ำกันสองคนเคยทำให้วงล้อหยุดที่คนแรกเสมอ */
+    const wheelTarget = (slot: number) => wheelPool.findIndex((p) => p.id === results?.[0]?.players?.[slot]?.id);
     const leftWheels = Math.floor(option.playerAmount / 2);
     const rightWheels = option.playerAmount - leftWheels;
 
@@ -551,10 +583,22 @@ export const MudmueMatchmaker = () => {
                         >
                             Random
                         </ChokButton>
-                        {notEnoughPlayers && (
+                        {notEnoughPlayers ? (
                             <ChokCaption>
-                                ต้องมีผู้เล่นพร้อมสุ่ม {option.playerAmount} คน (ตอนนี้ {availableCount} คน)
+                                ต้องมีผู้เล่นอย่างน้อย {option.playerAmount} คน (ตอนนี้ {players.length} คน)
                             </ChokCaption>
+                        ) : willReuseHidden ? (
+                            <ChokCaption>
+                                คนพร้อมสุ่มเหลือ {availableCount} คน — จะดึงคนที่ซ่อนไว้กลับมาเติมให้ครบ{" "}
+                                {option.playerAmount} คน แล้วเริ่มวนรอบใหม่
+                            </ChokCaption>
+                        ) : (
+                            leftOverPerSpin > 0 && (
+                                <ChokCaption>
+                                    {availableCount} คน ต่อแมตช์ {option.playerAmount} คน — เหลือ{" "}
+                                    {leftOverPerSpin} คน ยกไปตั้งต้นรอบถัดไป
+                                </ChokCaption>
+                            )
                         )}
                     </SpinArea>
                 </SpinGrid>

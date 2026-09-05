@@ -7,6 +7,8 @@ import {
     exportPoolsToExcel,
     importPoolsFromExcel,
     loadMatchHistory,
+    mergeBosses,
+    mergeCharacters,
     saveBosses,
     saveCharacters,
     upsertBoss,
@@ -191,10 +193,8 @@ export const WWPoolManager = () => {
                 if (result.characters.length) saveCharacters(result.characters);
                 if (result.bosses.length) saveBosses(result.bosses);
             } else {
-                const mergedChars = result.characters.reduce(upsertCharacter, characters);
-                const mergedBosses = result.bosses.reduce(upsertBoss, bosses);
-                saveCharacters(mergedChars);
-                saveBosses(mergedBosses);
+                saveCharacters(mergeCharacters(characters, result.characters));
+                saveBosses(mergeBosses(bosses, result.bosses));
             }
 
             reloadPools();

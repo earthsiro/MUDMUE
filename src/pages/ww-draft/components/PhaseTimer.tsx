@@ -98,20 +98,39 @@ export const PhaseTimer = ({
     const duration = Math.round(phaseMinutes(phase, settings) * 60);
     const [secondsLeft, setSecondsLeft] = useState(duration);
     const [running, setRunning] = useState(duration > 0);
+    /** เพิ่มค่าทุกครั้งที่ต้องเริ่มจับเวลาใหม่ (เปลี่ยนเฟส / กด Reset) */
+    const [runToken, setRunToken] = useState(0);
     const alerted = useRef(false);
+    /** เงาของ secondsLeft ไว้ให้ตัวนับอ่านตอนเริ่มเดิน โดยไม่ต้องผูกเป็น dependency */
+    const secondsLeftRef = useRef(secondsLeft);
+
+    useEffect(() => {
+        secondsLeftRef.current = secondsLeft;
+    }, [secondsLeft]);
 
     // one countdown per phase — entering a new phase restarts it
     useEffect(() => {
         setSecondsLeft(duration);
         setRunning(duration > 0);
+        setRunToken((token) => token + 1);
         alerted.current = false;
     }, [phase, duration]);
 
+    /**
+     * นับถอยหลังจากเวลาปลายทางจริง ไม่ใช่ลบทีละ 1 ต่อ tick
+     *
+     * ของเดิมผูก effect ไว้กับ `secondsLeft` ด้วย ทำให้ล้างและตั้ง interval ใหม่ทุกวินาที
+     * เวลาที่เสียไปกับการ render จึงบวกสะสมจนนาฬิกาเดินช้ากว่าเวลาจริง และเพี้ยนหนักขึ้น
+     * อีกตอนแท็บถูกเบราว์เซอร์หรี่ความถี่ timer ลง
+     */
     useEffect(() => {
-        if (!running || secondsLeft <= 0) return;
-        const id = window.setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+        if (!running) return;
+        const deadline = Date.now() + secondsLeftRef.current * 1000;
+        const tick = () => setSecondsLeft(Math.max(0, Math.round((deadline - Date.now()) / 1000)));
+        tick();
+        const id = window.setInterval(tick, 250);
         return () => window.clearInterval(id);
-    }, [running, secondsLeft]);
+    }, [running, runToken]);
 
     useEffect(() => {
         if (secondsLeft === 0 && duration > 0 && !alerted.current) {
@@ -123,8 +142,10 @@ export const PhaseTimer = ({
 
     const reset = useCallback(() => {
         setSecondsLeft(duration);
+        secondsLeftRef.current = duration;
         alerted.current = false;
         setRunning(duration > 0);
+        setRunToken((token) => token + 1);
     }, [duration]);
 
     if (duration <= 0) {

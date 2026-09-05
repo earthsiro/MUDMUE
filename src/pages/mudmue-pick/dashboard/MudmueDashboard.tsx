@@ -1,8 +1,17 @@
 import { ChokEmpty, ChokIconButton } from "../chok.styles";
-import { MatchDataType, TIED, loadMatchesWithFilterAsync, updateMatchAsync } from "../../../services/matchService.ts";
+import {
+    MatchDataType,
+    MatchFilterPayload,
+    TIED,
+    loadMatchesWithFilterAsync,
+    updateMatchAsync,
+    updateMatchProgress,
+} from "../../../services/matchService.ts";
 import { PlayerProfile, loadProfileMap } from "../../../services/profileService.ts";
 import styled, { keyframes } from "styled-components";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { applyScoreChange } from "../../../helpers/chokScore.ts";
 
 import IconComplete from "../../../assets/icon-flag.png";
 import IconPunchAura from "../../../assets/punch-aura.png";
@@ -118,52 +127,41 @@ const FightPunchRight = styled.img`
     pointer-events: none;
 `;
 
+/** แมตช์ที่ยังไม่จบ ใหม่สุดอยู่บน — ใช้ชุดเดียวกันทั้งตอนเปิดหน้าและตอนโหลดซ้ำ
+    ไม่งั้นพอจบแมตช์หนึ่งใบ ลำดับการ์ดทั้งหน้าจะพลิกกลับไปเป็นลำดับที่สร้าง */
+const DASHBOARD_FILTER: MatchFilterPayload = {
+    finished: false,
+    orderBy: "createDate",
+    orderDirection: "desc",
+};
+
 export const MudmueDashboard = () => {
     const [data, setData] = useState<MatchDataType[]>();
     const [fightingMatchIds, setFightingMatchIds] = useState<number[]>([]);
+    const [completingIds, setCompletingIds] = useState<number[]>([]);
     const [profileMap, setProfileMap] = useState<Record<string, PlayerProfile>>({});
+    /** กันกดจบแมตช์รัวใน tick เดียวกัน — state ยังไม่ทัน re-render ระหว่างสองคลิก */
+    const completingRef = useRef<Set<number>>(new Set());
 
     const handleScoreChange = (id: number, team: "blue" | "red", score: number) => {
+        const match = data?.find((item) => item.id === id);
+        if (!match) return;
+
+        const { player, serviceSide } = applyScoreChange(match, team, score);
         setData((prevData) =>
-            prevData?.map((match) => {
-                if (match.id !== id) return match;
-
-                // อัปเดตคะแนน
-                const updatedPlayers = match.player.map((player) =>
-                    player.team === team ? { ...player, score } : player
-                );
-
-                let newPlayers = [...updatedPlayers];
-                let newServiceSide = match.serviceSide;
-
-                if (team === match.serviceSide) {
-                    // สลับตำแหน่งผู้เล่นในทีมเดียวกัน
-                    newPlayers = newPlayers.map((player) => {
-                        if (player.team !== team) return player;
-                        return {
-                            ...player,
-                            position: player.position === 0 ? 1 : 0,
-                        };
-                    });
-                } else {
-                    // เปลี่ยนฝั่งเสิร์ฟ
-                    newServiceSide = team;
-                }
-
-                return {
-                    ...match,
-                    player: newPlayers,
-                    serviceSide: newServiceSide,
-                };
-            })
+            prevData?.map((item) => (item.id === id ? { ...item, player, serviceSide } : item))
         );
+        /* เขียนลง storage ทันที — คนคุมคะแนนยืนอยู่ข้างสนาม สลับไปตอบไลน์แล้วกลับมาต้องเห็นเลขเดิม */
+        updateMatchProgress(id, player, serviceSide);
     };
 
     // NOTE: Phase 2 — edit match handlers will be added here
 
     const handleClickCompleteMatch = async (id: number) => {
         const match = data?.find((d) => d.id === id);
-        if (!match) return;
+        if (!match || completingRef.current.has(id)) return;
+        completingRef.current.add(id);
+        setCompletingIds((prev) => [...prev, id]);
 
         const redScore = match.player.find((p) => p.team === "red")?.score ?? 0;
         const blueScore = match.player.find((p) => p.team === "blue")?.score ?? 0;
@@ -177,19 +175,19 @@ export const MudmueDashboard = () => {
 
         setTimeout(async () => {
             setFightingMatchIds((prev) => prev.filter((_id) => _id !== id));
-            const updated = await loadMatchesWithFilterAsync({ finished: false });
+            const updated = await loadMatchesWithFilterAsync(DASHBOARD_FILTER);
             setData(updated);
+            completingRef.current.delete(id);
+            setCompletingIds((prev) => prev.filter((_id) => _id !== id));
         }, 1000);
     };
 
     useEffect(() => {
         let mounted = true;
         setProfileMap(loadProfileMap());
-        loadMatchesWithFilterAsync({ finished: false, orderBy: "createDate", orderDirection: "desc" }).then(
-            (result) => {
-                if (mounted) setData(result);
-            }
-        );
+        loadMatchesWithFilterAsync(DASHBOARD_FILTER).then((result) => {
+            if (mounted) setData(result);
+        });
         return () => {
             mounted = false;
         };
@@ -218,6 +216,7 @@ export const MudmueDashboard = () => {
                                 type="button"
                                 title="จบแมตช์นี้"
                                 aria-label="จบแมตช์นี้"
+                                disabled={completingIds.includes(d.id)}
                                 onClick={() => handleClickCompleteMatch(d.id)}
                             >
                                 <img src={IconComplete} alt="" />

@@ -1,4 +1,4 @@
-import { HanCourt, HanSession, HanSettings, RateTier } from "../types/han";
+import { HanCourt, HanSession, HanSettings, RateTier, ShuttleBrand } from "../types/han";
 
 /**
  * ที่เก็บข้อมูลของ MUDMUE Han — localStorage ล้วน (เฟสเดียวกับแอปอื่นในเว็บนี้)
@@ -29,6 +29,22 @@ export const createCourt = (index: number, tierIds: string[] = []): HanCourt => 
     tierIds,
 });
 
+/** หลอดมาตรฐานคือ 12 ลูก — ตั้งต้นให้ทุกยี่ห้อ แก้รายยี่ห้อได้ */
+export const SHUTTLE_PIECES_PER_TUBE = 12;
+
+export const createShuttle = (
+    name = "",
+    pricePerTube = 0,
+    piecesPerTube = SHUTTLE_PIECES_PER_TUBE,
+    usedCount = 0
+): ShuttleBrand => ({
+    id: genId("shuttle"),
+    name,
+    pricePerTube,
+    piecesPerTube,
+    usedCount,
+});
+
 /**
  * บิลเปล่า — ตั้งใจให้เห็นกลไกครบตั้งแต่หน้าแรก (คอร์ท 1 ใบ + ป้ายราคา 1 ใบที่แปะไว้แล้ว)
  * แต่ไม่ยัดตัวเลขตัวอย่างมาให้ ทุกช่องราคาเริ่มที่ 0
@@ -41,9 +57,55 @@ export const createEmptySession = (): HanSession => {
         title: "",
         tiers: [firstTier],
         courts: [createCourt(1, [firstTier.id])],
-        shuttlePricePerPiece: 0,
-        shuttleUsedCount: 0,
+        shuttles: [createShuttle()],
         attendees: [],
+    };
+};
+
+/**
+ * บิลนี้ยังว่างอยู่ไหม — ใช้ตัดสินว่าต้องเตือนก่อนเขียนทับหรือเปล่า
+ *
+ * "ว่าง" คือยังไม่ได้กรอกอะไรที่มีความหมาย ไม่ใช่ต้องเท่ากับ `createEmptySession()`
+ * เป๊ะ ๆ เพราะ id กับวันที่ต่างกันทุกใบอยู่แล้ว
+ */
+export const isSessionBlank = (session: HanSession): boolean =>
+    session.title.trim() === "" &&
+    session.attendees.length === 0 &&
+    session.shuttles.every((brand) => brand.pricePerTube === 0 && brand.usedCount === 0) &&
+    session.courts.length <= 1 &&
+    session.tiers.every((tier) => tier.pricePerHour === 0);
+
+/* ------------------------------------------------------------------ */
+/* Migration — บิลที่บันทึกไว้ก่อนมีลูกแบดหลายยี่ห้อ                    */
+/* ------------------------------------------------------------------ */
+
+/** รูปแบบเดิม: ราคาต่อลูกค่าเดียวทั้งบิล + ยอดลูกที่ใช้รวม */
+interface LegacyShuttleFields {
+    shuttlePricePerPiece?: number;
+    shuttleUsedCount?: number;
+}
+
+/**
+ * แปลงบิลรูปแบบเดิมให้เป็นลิสต์ยี่ห้อเดียว
+ *
+ * ราคาต่อหลอดย้อนกลับมาจากราคาต่อลูก × 12 เพื่อให้ยอดรวมของบิลเก่าเท่าเดิมเป๊ะ
+ * (หารกลับด้วย 12 ตัวเดิมได้ราคาต่อลูกเท่าเดิม) ส่วนชื่อยี่ห้อปล่อยว่าง เพราะบิลเก่า
+ * ไม่เคยเก็บไว้ตั้งแต่แรก
+ */
+const migrateSession = (raw: HanSession & LegacyShuttleFields): HanSession => {
+    if (Array.isArray(raw.shuttles)) return raw;
+
+    const { shuttlePricePerPiece = 0, shuttleUsedCount = 0, ...rest } = raw;
+    return {
+        ...rest,
+        shuttles: [
+            createShuttle(
+                "",
+                shuttlePricePerPiece * SHUTTLE_PIECES_PER_TUBE,
+                SHUTTLE_PIECES_PER_TUBE,
+                shuttleUsedCount
+            ),
+        ],
     };
 };
 
@@ -54,7 +116,7 @@ export const createEmptySession = (): HanSession => {
 export const loadDraft = (): HanSession | null => {
     try {
         const data = localStorage.getItem(HAN_DRAFT_KEY);
-        if (data) return JSON.parse(data) as HanSession;
+        if (data) return migrateSession(JSON.parse(data) as HanSession & LegacyShuttleFields);
     } catch {
         return null;
     }
@@ -76,7 +138,7 @@ export const clearDraft = () => {
 export const loadSessions = (): HanSession[] => {
     try {
         const data = localStorage.getItem(HAN_SESSIONS_KEY);
-        if (data) return JSON.parse(data) as HanSession[];
+        if (data) return (JSON.parse(data) as (HanSession & LegacyShuttleFields)[]).map(migrateSession);
     } catch {
         return [];
     }

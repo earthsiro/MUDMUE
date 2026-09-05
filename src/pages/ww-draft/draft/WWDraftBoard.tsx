@@ -167,7 +167,8 @@ export const WWDraftBoard = () => {
                         type="button"
                         tone="primary"
                         onClick={() => {
-                            if (window.confirm("ล้างแมตช์ปัจจุบันและเริ่มใหม่?")) resetMatch();
+                            if (window.confirm("ล้างแมตช์ปัจจุบันและเริ่มใหม่? (แมตช์นี้จะถูกเก็บเข้าประวัติให้อัตโนมัติ)"))
+                                resetMatch();
                         }}
                     >
                         New Match

@@ -1,42 +1,68 @@
 import { PlayerProps } from "../types/player";
 
-export const  spinRoundsWithCarryOver = (pool: PlayerProps[], perRound: number, nRounds: number): PlayerProps[][] => {
-    let carry: PlayerProps[] = [];   // เก็บคนตกค้าง
-    const poolBase = pool.slice();     // original pool
-    let poolClone = pool.slice();
+/**
+ * สับลิสต์แบบ Fisher-Yates — คืน array ใหม่เสมอ ไม่แก้ของเดิม
+ *
+ * ของเดิมใช้ `sort(() => Math.random() - 0.5)` ซึ่งให้การกระจายที่ไม่สม่ำเสมอ
+ * (comparator ไม่คงที่ ผลลัพธ์ขึ้นกับอัลกอริทึม sort ของ engine) บางคนเลยถูก
+ * สุ่มติดบ่อยกว่าคนอื่นอย่างเป็นระบบ ทั้งที่ทั้งก๊วนควรมีโอกาสเท่ากัน
+ */
+export const shuffle = <T,>(list: T[]): T[] => {
+    const out = list.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+};
+
+/**
+ * สุ่มทีมทีละรอบ โดยคนที่เหลือไม่ครบทีมของรอบก่อนได้ลงเป็นคนแรกของรอบถัดไป
+ *
+ * ตัวตนของผู้เล่นเทียบด้วย `id` ไม่ใช่ `uuid` — คนที่พิมพ์ชื่อเพิ่มหน้างานยังไม่มี
+ * โปรไฟล์ `uuid` จึงเป็น "" เหมือนกันหมด เทียบด้วย uuid เมื่อไหร่ทั้งก๊วนจะถูกมองเป็น
+ * คนเดียวกัน แล้วรอบถัดไปจะเติมคนไม่ได้เลย (5 คน สุ่ม 2 รอบ เคยได้รอบสองแค่คนเดียว)
+ *
+ * `reserve` คือคนที่ถูกซ่อนไว้ — ปกติไม่แตะ จะถูกดึงกลับมาก็ต่อเมื่อคนที่พร้อมสุ่ม
+ * เหลือไม่พอตั้งทีมสักทีมเดียว ไม่งั้นคนที่ตั้งใจซ่อน (กลับบ้านแล้ว/เจ็บ) จะโผล่มาใน
+ * ทีมทั้งที่ยังมีคนพร้อมสุ่มพออยู่
+ */
+export const spinRoundsWithCarryOver = (
+    pool: PlayerProps[],
+    perRound: number,
+    nRounds: number,
+    reserve: PlayerProps[] = []
+): PlayerProps[][] => {
+    /** คนทั้งหมดที่ดึงมาใช้ได้ในรอบเวียนถัดไป — คนที่ซ่อนไว้เข้ามาเฉพาะตอนคนพร้อมสุ่มไม่พอ */
+    const cycleSource = pool.length >= perRound ? pool.slice() : [...pool, ...reserve];
+
     const output: PlayerProps[][] = [];
+    /** คิวของรอบเวียนนี้ — เริ่มจากคนที่พร้อมสุ่มก่อนเสมอ ใครยังไม่ได้ลงจะได้ลงก่อน */
+    let queue = shuffle(pool);
+    let carry: PlayerProps[] = [];
 
     for (let round = 0; round < nRounds; round++) {
-        let group: PlayerProps[] = [];
+        const group = [...carry];
+        carry = [];
+        queue = queue.filter((p) => !group.some((c) => c.id === p.id));
 
-        // 1. ใส่ carry over ก่อน
-        if (carry.length) {
-            group = [...carry];
-        }
-
-        // 2. เติม group ให้ครบ perRound ด้วย pull จาก poolClone (shuffle ก่อนถ้าจำเป็น)
-        if (group.length < perRound) {
-            // เอาคนใน carry ออก
-            poolClone = poolClone.filter((p) => !group.some((c) => c.uuid === p.uuid));
-            // ถ้า poolClone หมด ให้เริ่ม shuffle ใหม่แต่ไม่ซ้ำกับ carry
-            if (poolClone.length === 0) {
-                poolClone = poolBase.filter((p) => !group.some((c) => c.uuid === p.uuid)).sort(() => Math.random() - 0.5);
-            } else {
-                poolClone = poolClone.sort(() => Math.random() - 0.5);
+        while (group.length < perRound) {
+            if (queue.length === 0) {
+                /* คิวหมด = ทุกคนได้ลงครบหนึ่งรอบเวียนแล้ว เริ่มเวียนใหม่โดยไม่ซ้ำกับคนในทีมนี้ */
+                const next = cycleSource.filter((p) => !group.some((c) => c.id === p.id));
+                /* คนทั้งหมดยังน้อยกว่าขนาดทีม — คืนทีมที่ไม่ครบดีกว่าวนไม่รู้จบ */
+                if (next.length === 0) break;
+                queue = shuffle(next);
             }
-            const need = perRound - group.length;
-            group = group.concat(poolClone.slice(0, need));
-            poolClone = poolClone.slice(need);
+            group.push(queue.shift() as PlayerProps);
         }
 
         output.push(group);
 
-        // 3. หา carry over คนที่เหลือสำหรับรอบถัดไป
-        if (poolClone.length < perRound && poolClone.length > 0) {
-            carry = poolClone;
-            poolClone = [];
-        } else {
-            carry = [];
+        /* เหลือไม่พอตั้งทีมถัดไป = ยกไปเป็นคนแรกของรอบหน้า จะได้ไม่ต้องนั่งรอทั้งเย็น */
+        if (queue.length > 0 && queue.length < perRound) {
+            carry = queue;
+            queue = [];
         }
     }
 

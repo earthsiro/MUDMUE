@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { HanCalcResult, HanSession, HanSettings, RateTier } from "../../../types/han";
+import type { HanCalcResult, HanSession, HanSettings, RateTier, ShuttleBrand } from "../../../types/han";
 
 import type { PlayerProfile } from "../../../services/profileService";
 
@@ -29,9 +29,10 @@ export type HanContextValue = {
     pickedTierId: string | null;
     setPickedTierId: (tierId: string | null) => void;
 
-    /** ลูกแบด */
-    setShuttlePrice: (price: number) => void;
-    setShuttleCount: (count: number) => void;
+    /** ลูกแบด — หนึ่งรายการต่อหนึ่งยี่ห้อ */
+    addShuttle: () => void;
+    updateShuttle: (shuttleId: string, patch: Partial<Omit<ShuttleBrand, "id">>) => void;
+    removeShuttle: (shuttleId: string) => void;
 
     /** คน */
     profiles: PlayerProfile[];

@@ -39,6 +39,16 @@ npm run build
 npm run lint
 ```
 
+### Test
+
+ยูนิตเทสของ helpers/services (Vitest) — สูตรคิดเงินของ Han, กติกาดราฟท์ WuWa,
+การสุ่มจับคู่ และการอ่าน-เขียน localStorage
+
+```sh
+npm test
+npm run test:watch
+```
+
 ### Preview
 
 ```sh
