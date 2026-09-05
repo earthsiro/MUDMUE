@@ -25,9 +25,12 @@ export type HanContextValue = {
     /** เอาป้ายออกจากคอร์ท ระบุตำแหน่งเพราะป้ายเดิมแปะซ้ำบนคอร์ทเดียวกันได้ */
     detachTierAt: (courtId: string, position: number) => void;
 
-    /** โหมดแตะ-เลือก-แล้วแตะคอร์ท (ทางสำรองของการลาก) */
+    /** ป้ายที่ถูกเลือกไว้รอแตะคอร์ท — ระหว่างลากก็ใช้ตัวนี้เป็นตัวไฮไลต์ป้ายต้นทาง */
     pickedTierId: string | null;
     setPickedTierId: (tierId: string | null) => void;
+    /** คอร์ทที่นิ้ว/เมาส์ลอยอยู่ระหว่างลาก — ต้นทางลาก (TierDeck) กับปลายทาง (CourtBoard) คนละคอมโพเนนต์ */
+    dragOverCourtId: string | null;
+    setDragOverCourtId: (courtId: string | null) => void;
 
     /** ลูกแบด — หนึ่งรายการต่อหนึ่งยี่ห้อ */
     addShuttle: () => void;

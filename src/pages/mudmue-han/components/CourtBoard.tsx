@@ -6,16 +6,17 @@ import { breakpoints } from "../../../styles/breakpoints";
 import { formatBaht, formatShuttle } from "../../../helpers/hanCalc";
 import styled from "styled-components";
 import { useHan } from "../context/hanContext";
-import { useState } from "react";
 
 /**
  * แถวการ์ดคอร์ท — เป็นจุดวาง (drop target) ของป้ายราคา
  *
  * การ์ดเป็นพื้นขาวเหมือน section อื่นของเว็บ มีแค่ตัวสนามที่เป็นเขียว
  *
- * รับป้ายได้สองทางเสมอตามสเปก: ลากมาวาง (HTML5 drag) และ "แตะป้ายเพื่อเลือก
- * แล้วแตะคอร์ท" ทางหลังไม่ใช่ของสำรองที่ทำขอไปที — หน้างานจริงคือมือเปียกเหงื่อ
- * กลางแดด ซึ่ง drag บนมือถือไม่ทำงานเลยด้วยซ้ำ
+ * รับป้ายได้สองทางเสมอตามสเปก: ลากมาวาง และ "แตะป้ายเพื่อเลือกแล้วแตะคอร์ท"
+ * ทางหลังไม่ใช่ของสำรองที่ทำขอไปที — หน้างานจริงคือมือเปียกเหงื่อกลางแดด
+ *
+ * การลากใช้ Pointer Events (ดู `TierDeck`) ตัวการ์ดจึงไม่ต้องมี handler ของ HTML5
+ * drag แล้ว แค่ติด `data-court-id` ไว้ให้ฝั่งที่ลากหาเจอด้วย `elementFromPoint`
  */
 
 const Scroller = styled.div`
@@ -245,9 +246,17 @@ const AddCourt = styled.button`
 `;
 
 export const CourtBoard = () => {
-    const { session, result, pickedTierId, setPickedTierId, attachTier, detachTierAt, addCourt, removeCourt } =
-        useHan();
-    const [dragOverCourtId, setDragOverCourtId] = useState<string | null>(null);
+    const {
+        session,
+        result,
+        pickedTierId,
+        setPickedTierId,
+        attachTier,
+        detachTierAt,
+        addCourt,
+        removeCourt,
+        dragOverCourtId,
+    } = useHan();
 
     const tierById = new Map(session.tiers.map((tier) => [tier.id, tier]));
     const pickedTier = pickedTierId ? tierById.get(pickedTierId) : undefined;
@@ -290,30 +299,13 @@ export const CourtBoard = () => {
                                 <span aria-hidden>✕</span>
                             </HanFloatingClose>
 
-                            {/* ทั้งการ์ดคือจุดวาง ไม่ใช่แค่รูปสนาม — ตอนลากด้วยเมาส์เล็งง่ายกว่ามาก
+                            {/* ทั้งการ์ดคือจุดวาง ไม่ใช่แค่รูปสนาม — ตอนลากเล็งง่ายกว่ามาก
                                 ส่วนคีย์บอร์ด/screen reader ใช้รูปสนามที่เป็น role="button" ข้างใน */}
                             <Tile
+                                data-court-id={court.id}
                                 $armed={armed}
                                 $over={over}
                                 onClick={() => handleCourtClick(court)}
-                                onDragEnter={(e) => {
-                                    e.preventDefault();
-                                    setDragOverCourtId(court.id);
-                                }}
-                                onDragOver={(e) => {
-                                    /* ต้อง preventDefault ทั้ง dragenter และ dragover ไม่งั้นเบราว์เซอร์
-                                       ถือว่าที่นี่ไม่ใช่จุดวาง แล้วจะไม่ยิง drop ให้เลย */
-                                    e.preventDefault();
-                                    e.dataTransfer.dropEffect = "copy";
-                                    setDragOverCourtId(court.id);
-                                }}
-                                onDragLeave={() => setDragOverCourtId((id) => (id === court.id ? null : id))}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    setDragOverCourtId(null);
-                                    const tierId = e.dataTransfer.getData("text/plain");
-                                    if (tierId) attachTier(court.id, tierId);
-                                }}
                             >
                                 <CourtFrame
                                     role="button"

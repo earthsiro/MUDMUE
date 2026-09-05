@@ -6,14 +6,17 @@ import { formatBaht } from "../../../helpers/hanCalc";
 import styled from "styled-components";
 import { useDraftNumber } from "./useDraftNumber";
 import { useHan } from "../context/hanContext";
+import { useRef, useState } from "react";
 
 /**
  * "การ์ด ชม." — ป้ายราคาแยกชิ้นที่ยังไม่ผูกกับคอร์ทใด สร้างไว้ก่อนแล้วค่อยเอาไปแปะ
  *
- * ลากได้ทั้งใบ ไม่ต้องจับที่ grip — ยกเว้นตอนที่เริ่มลากจากในช่องกรอกหรือปุ่ม ซึ่ง
- * `onDragStart` จะยกเลิกให้ เพื่อให้ลากเลือกตัวเลขในช่องได้ตามปกติ
- * ส่วนปุ่ม grip ยังอยู่ในฐานะ "แตะเพื่อเลือกแล้วไปแตะคอร์ท" ซึ่งเป็นทางเดียวที่ใช้ได้
- * บนมือถือ (HTML5 drag ไม่ทำงานบนทัชเลย)
+ * เอาไปแปะคอร์ทได้สองทาง ใช้ได้ทั้งเมาส์และนิ้ว:
+ * - ลาก: เมาส์ลากจากที่ไหนของการ์ดก็ได้ ส่วนนิ้วจับที่ปุ่ม ⠿ (ที่อื่นสงวนไว้ให้เลื่อนหน้าจอ)
+ * - แตะ: แตะการ์ดหนึ่งครั้งเพื่อเลือก แล้วไปแตะคอร์ท
+ *
+ * ทั้งสองทางเดินบน Pointer Events ชุดเดียวกัน ไม่ใช่ HTML5 drag-and-drop ซึ่งไม่ยิง
+ * event ให้เลยบนทัช (เป็นสาเหตุที่การ์ดลากไม่ได้บนแท็บเล็ตมาก่อนหน้านี้)
  */
 
 /** การ์ดใบเล็กเรียงต่อกันเป็นแถว ไม่ใช่แถวยาวเต็มความกว้าง — ป้ายราคาปกติมีแค่ 2-3 ใบ
@@ -40,12 +43,18 @@ const Card = styled.div<{ $picked: boolean }>`
     padding: 2px 4px 6px;
     cursor: grab;
     border-radius: 12px;
+    /* ลากด้วยเมาส์แล้วอย่าไปลากเลือกตัวหนังสือบนการ์ด — ในช่องกรอกยังเลือกได้ตามปกติ */
+    user-select: none;
     background: ${({ $picked }) => ($picked ? chok.primaryTint : chok.surface)};
     border: 1px solid ${({ $picked }) => ($picked ? chok.primary : chok.line)};
     transition: background 0.15s ease, border-color 0.15s ease;
 
     &:active {
         cursor: grabbing;
+    }
+
+    input {
+        user-select: text;
     }
 `;
 
@@ -66,6 +75,8 @@ const Grip = styled.div<{ $picked: boolean }>`
     letter-spacing: -2px;
     user-select: none;
     cursor: grab;
+    /* จับที่นี่แล้วลากด้วยนิ้วได้ ไม่ถูกเบราว์เซอร์แย่งไปเลื่อนหน้าจอ */
+    touch-action: none;
     color: ${({ $picked }) => ($picked ? chok.primary : chok.subtle)};
     transition: color 0.15s ease;
 
@@ -234,6 +245,27 @@ const RemoveTier = styled.button`
     }
 `;
 
+/**
+ * ป้ายจำลองที่ลอยตามนิ้ว/เมาส์ระหว่างลาก
+ *
+ * ต้อง `pointer-events: none` เพราะระหว่างลากเราหาคอร์ทปลายทางด้วย
+ * `document.elementFromPoint` — ถ้าตัวนี้รับ event ก็จะเจอแต่ตัวเองทุกครั้ง
+ */
+const DragGhost = styled.div`
+    position: fixed;
+    z-index: 60;
+    transform: translate(-50%, -150%);
+    pointer-events: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: #ffffff;
+    background: ${chok.primary};
+    box-shadow: 0 6px 16px rgba(0, 0, 60, 0.28);
+`;
+
 /** ปุ่มเพิ่มแบบตัวหนังสือ ไม่ใช่กล่องเส้นประ — การ์ดคอร์ทข้างบนใช้กล่องเส้นประไปแล้ว */
 const AddTier = styled.button`
     align-self: flex-start;
@@ -260,11 +292,26 @@ const AddTier = styled.button`
     }
 `;
 
+/** คอร์ทที่อยู่ใต้จุดนี้ — การ์ดคอร์ทติด `data-court-id` ไว้ให้หาเจอ */
+const courtIdAt = (x: number, y: number): string | null =>
+    (document.elementFromPoint(x, y) as HTMLElement | null)?.closest("[data-court-id]")?.getAttribute(
+        "data-court-id"
+    ) ?? null;
+
+/** ระยะที่ถือว่า "ลาก" ไม่ใช่ "แตะ" — นิ้วสั่นไม่กี่พิกเซลยังต้องนับเป็นแตะอยู่ */
+const DRAG_THRESHOLD = 8;
+
 const TierRow = ({ tierId }: { tierId: string }) => {
-    const { session, updateTier, removeTier, pickedTierId, setPickedTierId } = useHan();
+    const { session, updateTier, removeTier, pickedTierId, setPickedTierId, attachTier, setDragOverCourtId } =
+        useHan();
     const tier = session.tiers.find((item) => item.id === tierId);
     const price = useDraftNumber((value) => updateTier(tierId, { pricePerHour: value }));
     const hours = useDraftNumber((value) => updateTier(tierId, { hours: value }));
+    /** ข้อมูลของการลากที่กำลังเกิดอยู่ — เก็บใน ref เพราะอ่าน/เขียนทุก pointermove */
+    const drag = useRef<{ pointerId: number; startX: number; startY: number; moved: boolean } | null>(null);
+    const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+    /** เบราว์เซอร์ยิง click ตามหลังการปล่อยลากด้วย — กันไม่ให้ไปสลับสถานะเลือกซ้ำ */
+    const justDragged = useRef(false);
 
     if (!tier) return null;
 
@@ -276,30 +323,86 @@ const TierRow = ({ tierId }: { tierId: string }) => {
         0
     );
 
+    /**
+     * ลากด้วย Pointer Events ไม่ใช่ HTML5 drag-and-drop
+     *
+     * HTML5 drag ไม่ยิง event ให้เลยบนทัช การ์ดจึงลากไม่ได้ทั้งบนแท็บเล็ตและมือถือ
+     * ทางนี้เมาส์/นิ้ว/ปากกาเดินโค้ดชุดเดียวกัน โดยนิ้วต้องจับที่ปุ่ม ⠿ เพื่อไม่ให้
+     * แย่งการเลื่อนหน้าจอ ส่วนเมาส์ลากจากที่ไหนของการ์ดก็ได้เหมือนเดิม
+     */
+    const endDrag = (x: number, y: number) => {
+        const state = drag.current;
+        drag.current = null;
+        setGhost(null);
+        setDragOverCourtId(null);
+        if (!state?.moved) return;
+        justDragged.current = true;
+
+        const courtId = courtIdAt(x, y);
+        if (courtId) {
+            attachTier(courtId, tier.id);
+            setPickedTierId(null);
+        }
+    };
+
     return (
         <Card
             $picked={picked}
-            draggable
-            onDragStart={(e) => {
-                /* เริ่มลากจากในช่องกรอกหรือปุ่ม = ผู้ใช้ตั้งใจลากเลือกข้อความ/กดปุ่ม ไม่ใช่ลากการ์ด */
-                if ((e.target as HTMLElement).closest("input, button")) {
-                    e.preventDefault();
+            onPointerDown={(e) => {
+                /* กดในช่องกรอกหรือปุ่ม = ตั้งใจพิมพ์/กดปุ่ม ไม่ใช่ลากการ์ด */
+                if ((e.target as HTMLElement).closest("input, button")) return;
+                /* นิ้วลากได้เฉพาะจากปุ่ม ⠿ ที่อื่นปล่อยให้เลื่อนหน้าจอตามปกติ */
+                if (e.pointerType === "touch" && !(e.target as HTMLElement).closest("[data-grip]")) return;
+                drag.current = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
+                e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+                const state = drag.current;
+                if (!state || state.pointerId !== e.pointerId) return;
+
+                if (!state.moved) {
+                    const far = Math.hypot(e.clientX - state.startX, e.clientY - state.startY);
+                    if (far < DRAG_THRESHOLD) return;
+                    state.moved = true;
+                    setPickedTierId(tier.id);
+                }
+                setGhost({ x: e.clientX, y: e.clientY });
+                setDragOverCourtId(courtIdAt(e.clientX, e.clientY));
+            }}
+            onPointerUp={(e) => endDrag(e.clientX, e.clientY)}
+            onPointerCancel={() => endDrag(-1, -1)}
+            onClick={(e) => {
+                /* ปล่อยหลังลาก ไม่ใช่การแตะเลือก และการกดในช่องกรอก/ปุ่มก็ไม่ใช่ */
+                if (justDragged.current) {
+                    justDragged.current = false;
                     return;
                 }
-                e.dataTransfer.setData("text/plain", tier.id);
-                e.dataTransfer.effectAllowed = "copy";
-                setPickedTierId(tier.id);
+                if ((e.target as HTMLElement).closest("input, button")) return;
+                setPickedTierId(picked ? null : tier.id);
             }}
-            onDragEnd={() => setPickedTierId(null)}
         >
+            {ghost && (
+                <DragGhost style={{ left: ghost.x, top: ghost.y }} aria-hidden>
+                    {name}
+                </DragGhost>
+            )}
             <Grip
                 role="button"
                 tabIndex={0}
+                data-grip
                 $picked={picked}
-                title={picked ? `ยกเลิกการเลือก ${name}` : `เลือก ${name} เพื่อไปแตะคอร์ท`}
+                title={picked ? `ยกเลิกการเลือก ${name}` : `ลาก ${name} ไปวางบนคอร์ท หรือแตะเพื่อเลือก`}
                 aria-label={picked ? `ยกเลิกการเลือก ${name}` : `เลือกช่วงราคา ${name}`}
                 aria-pressed={picked}
-                onClick={() => setPickedTierId(picked ? null : tier.id)}
+                onClick={(e) => {
+                    /* การ์ดที่ครอบอยู่ก็สลับสถานะเลือกเหมือนกัน ปล่อยทะลุไปจะกลายเป็นสลับสองครั้ง */
+                    e.stopPropagation();
+                    if (justDragged.current) {
+                        justDragged.current = false;
+                        return;
+                    }
+                    setPickedTierId(picked ? null : tier.id);
+                }}
                 onKeyDown={(e) => {
                     if (e.key !== "Enter" && e.key !== " ") return;
                     e.preventDefault();
