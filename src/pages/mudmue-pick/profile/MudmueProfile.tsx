@@ -28,6 +28,7 @@ import React, { useEffect, useState } from "react";
 
 import { IconUserPlus } from "../../../components/icons";
 import { countSessionsWithProfile } from "../../../services/hanService";
+import { countUnfinishedMatchesWithProfile } from "../../../services/matchService";
 import { formatDateTime } from "../../../helpers/formatDate";
 import styled from "styled-components";
 
@@ -99,12 +100,17 @@ export const MudmueProfile = () => {
      * ไม่งั้นบิลเก่าจะเหลือแต่ uuid ที่ไม่มีเจ้าของ
      */
     const [linkedBills, setLinkedBills] = useState(0);
+    /** แมตช์ที่ยังไม่จบและมีคนนี้อยู่ — ลบไปแล้วพอกดจบแมตช์ สถิติของคนนี้จะหายเงียบ ๆ */
+    const [linkedMatches, setLinkedMatches] = useState(0);
     const [formProfile, setFormProfile] = useState<Partial<PlayerProfile>>({
         id: undefined,
         name: "",
         displayName: "",
         level: "",
     });
+
+    /** ผูกอยู่กับที่ไหนสักแห่ง = ลบไม่ได้ ต้องซ่อนแทน */
+    const isLinked = linkedBills > 0 || linkedMatches > 0;
 
     const openModal = (id: string) => (document.getElementById(id) as HTMLDialogElement).showModal();
     const closeModal = (id: string) => (document.getElementById(id) as HTMLDialogElement).close();
@@ -120,6 +126,7 @@ export const MudmueProfile = () => {
     const handleClickDeleteProfileModal = (data: PlayerProfile) => {
         setFormProfile(data);
         setLinkedBills(countSessionsWithProfile(data.uuid));
+        setLinkedMatches(countUnfinishedMatchesWithProfile(data.uuid));
         openModal("confirm_modal");
     };
     const onDelete = (id: number) => {
@@ -345,12 +352,18 @@ export const MudmueProfile = () => {
             <dialog id="confirm_modal" className="modal">
                 <div className="modal-box w-11/12 max-w-md" style={{ background: chok.surface }}>
                     <ModalBox>
-                        <ModalHeading>{linkedBills > 0 ? "ลบไม่ได้ — ซ่อนแทนไหม?" : "ลบโปรไฟล์นี้?"}</ModalHeading>
+                        <ModalHeading>{isLinked ? "ลบไม่ได้ — ซ่อนแทนไหม?" : "ลบโปรไฟล์นี้?"}</ModalHeading>
                         <span>
-                            {linkedBills > 0 ? (
+                            {isLinked ? (
                                 <>
                                     <strong>{formProfile.displayName || formProfile.name}</strong> ติดอยู่ใน{" "}
-                                    {linkedBills} บิลของ MUDMUE Han — ลบแล้วบิลเก่าจะอ้างถึงคนที่ไม่มีอยู่จริง
+                                    {[
+                                        linkedBills > 0 ? `${linkedBills} บิลของ MUDMUE Han` : null,
+                                        linkedMatches > 0 ? `${linkedMatches} แมตช์ที่ยังไม่จบ` : null,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(" และ ")}{" "}
+                                    — ลบแล้วบิลเก่าจะอ้างถึงคนที่ไม่มีอยู่จริง และแมตช์ที่ค้างอยู่จะบันทึกสถิติให้คนนี้ไม่ได้
                                     ซ่อนแทนได้ คนนี้จะหายจากลิสต์ "คนมาวันนี้" แต่บิลเก่ายังอ่านได้ครบ
                                 </>
                             ) : (
@@ -364,7 +377,7 @@ export const MudmueProfile = () => {
                             <ChokButton type="button" $tone="neutral" onClick={() => closeModal("confirm_modal")}>
                                 ยกเลิก
                             </ChokButton>
-                            {linkedBills > 0 ? (
+                            {isLinked ? (
                                 <ChokButton type="button" $tone="primary" onClick={() => onArchive(formProfile.id!)}>
                                     ซ่อนโปรไฟล์
                                 </ChokButton>

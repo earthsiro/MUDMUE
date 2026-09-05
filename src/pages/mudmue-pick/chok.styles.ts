@@ -380,36 +380,50 @@ export const ChokLegend = styled.div`
 /* Form controls — native inputs had 13–16px targets and no hover     */
 /* ------------------------------------------------------------------ */
 
-/** Segmented control (2 Player / 4 Player). Wraps radios, so arrow keys work. */
+/**
+ * Segmented control — ราง 1 อัน แบ่งช่องเท่า ๆ กันตามจำนวนตัวเลือก
+ *
+ * เต็มความกว้างเหมือน `ChokInput`/`ChokSelect` ที่อยู่ในกล่องเดียวกัน มุมโค้ง 10px
+ * (รางหุ้มปุ่มมุม 7px) จึงเข้าชุดกับช่องกรอกมุม 8px แทนที่จะเป็น pill ที่กว้างตามตัวหนังสือ
+ */
 export const ChokSegmented = styled.div`
-    display: inline-flex;
-    border: 1px solid #c9c9d6;
-    border-radius: 999px;
-    overflow: hidden;
-    background: ${chok.surface};
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    background: ${chok.hover};
+    border: 1px solid ${chok.line};
+    border-radius: 10px;
 `;
 
+/**
+ * ปุ่มในราง — ตัวที่เลือกเป็นแผ่นน้ำเงินลอยขึ้นมาจากราง
+ *
+ * สูง 36px + ราง 4px บน-ล่าง = พื้นที่กด 44px ตาม `chok.tap` แต่พื้นสีน้ำเงิน
+ * กินที่น้อยกว่าเดิม เลยไม่แย่งสายตาไปจากปุ่ม action หลักของหน้า
+ */
 export const ChokSegment = styled.label<{ $active: boolean }>`
     position: relative; /* contains the visually-hidden radio */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: ${chok.tap};
-    padding: 0 18px;
+    height: 36px;
+    padding: 0 12px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    border-left: 1px solid ${chok.line};
+    border-radius: 7px;
     background: ${({ $active }) => ($active ? chok.primary : "transparent")};
-    color: ${({ $active }) => ($active ? "#ffffff" : chok.inkSoft)};
+    color: ${({ $active }) => ($active ? "#ffffff" : chok.muted)};
+    box-shadow: ${({ $active }) => ($active ? "0 1px 2px rgba(0, 0, 60, 0.28)" : "none")};
     transition: background 0.15s ease, color 0.15s ease;
 
-    &:first-of-type {
-        border-left: none;
-    }
     &:hover {
-        background: ${({ $active }) => ($active ? chok.primaryHover : chok.hover)};
+        background: ${({ $active }) => ($active ? chok.primaryHover : "rgba(255, 255, 255, 0.7)")};
+        color: ${({ $active }) => ($active ? "#ffffff" : chok.ink)};
     }
 
     input {

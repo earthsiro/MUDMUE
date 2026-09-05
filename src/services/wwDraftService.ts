@@ -76,6 +76,34 @@ export const upsertBoss = (list: WWBoss[], draft: WWBoss): WWBoss[] => {
 
 export const deleteBoss = (list: WWBoss[], id: string): WWBoss[] => list.filter((b) => b.id !== id);
 
+/**
+ * รวมของที่นำเข้าเข้ากับพูลเดิม — เทียบ id ก่อน ถ้าไม่เจอค่อยถอยไปเทียบชื่อ
+ *
+ * แถวในไฟล์ Excel ที่ไม่ได้ใส่ id (เทมเพลตที่ระบบแจกก็เว้นว่างมาให้) จะได้ id ใหม่
+ * ทุกครั้งที่นำเข้า ถ้าเทียบแค่ id การนำเข้าไฟล์เดิมซ้ำจะได้ข้อมูลซ้ำทั้งชุด
+ *
+ * เวลาเจอด้วยชื่อจะรักษา id เดิมไว้เสมอ เพราะแมตช์ที่ค้างอยู่อ้างถึงตัวละครด้วย id
+ */
+const mergeByIdOrName = <T extends { id: string; name: string }>(existing: T[], incoming: T[]): T[] =>
+    incoming.reduce<T[]>((list, draft) => {
+        const byId = list.findIndex((item) => item.id === draft.id);
+        if (byId >= 0) return list.map((item, index) => (index === byId ? { ...item, ...draft } : item));
+
+        const key = draft.name.trim().toLowerCase();
+        const byName = list.findIndex((item) => item.name.trim().toLowerCase() === key);
+        if (byName >= 0) {
+            return list.map((item, index) => (index === byName ? { ...item, ...draft, id: item.id } : item));
+        }
+
+        return [...list, draft];
+    }, existing);
+
+export const mergeCharacters = (existing: WWCharacter[], incoming: WWCharacter[]): WWCharacter[] =>
+    mergeByIdOrName(existing, incoming);
+
+export const mergeBosses = (existing: WWBoss[], incoming: WWBoss[]): WWBoss[] =>
+    mergeByIdOrName(existing, incoming);
+
 /** Look-ups keyed by id, so grids don't scan the array per tile. */
 export const toCharacterMap = (list: WWCharacter[]): Record<string, WWCharacter> =>
     list.reduce<Record<string, WWCharacter>>((acc, c) => {

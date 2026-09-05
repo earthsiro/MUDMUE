@@ -8,7 +8,7 @@ import {
     chok,
 } from "../../mudmue-pick/chok.styles";
 import { HanStack, HanTotalLine } from "../han.styles";
-import { deleteSession, loadSessions } from "../../../services/hanService";
+import { deleteSession, isSessionBlank, loadSessions } from "../../../services/hanService";
 import { useEffect, useState } from "react";
 
 import type { HanSession } from "../../../types/han";
@@ -45,6 +45,7 @@ const ModalActions = styled.div`
 `;
 
 const CONFIRM_ID = "han_history_confirm";
+const OVERWRITE_ID = "han_history_overwrite";
 
 const dateLabel = (iso: string) => {
     const date = new Date(iso);
@@ -57,10 +58,11 @@ const dateLabel = (iso: string) => {
  * ข้อดีคือถ้าสูตรถูกแก้ทีหลัง บิลเก่าก็แสดงยอดตามสูตรใหม่ทันที ไม่ต้อง migrate
  */
 export const MudmueHanHistory = () => {
-    const { loadSessionToDraft } = useHan();
+    const { loadSessionToDraft, session: draft, sessionSaved } = useHan();
     const navigate = useNavigate();
     const [sessions, setSessions] = useState<HanSession[]>([]);
     const [pendingDelete, setPendingDelete] = useState<HanSession | null>(null);
+    const [pendingOpen, setPendingOpen] = useState<HanSession | null>(null);
 
     useEffect(() => {
         setSessions(loadSessions());
@@ -71,9 +73,23 @@ export const MudmueHanHistory = () => {
         (a, b) => new Date(b.savedAt ?? b.date).getTime() - new Date(a.savedAt ?? a.date).getTime()
     );
 
-    const handleOpen = (session: HanSession) => {
+    /**
+     * เปิดบิลเก่าขึ้นมาแก้ = เขียนทับบิลที่กรอกค้างอยู่ในหน้าคำนวณ
+     * ถ้าบิลที่ค้างอยู่ยังไม่ได้บันทึกและกรอกอะไรไว้แล้ว ต้องถามก่อน —
+     * ทางนี้ทำข้อมูลหายได้เหมือนปุ่ม "เริ่มบิลใหม่" ที่มี dialog ยืนยันอยู่แล้ว
+     */
+    const openSession = (session: HanSession) => {
         loadSessionToDraft(session);
         navigate("/han/calculator");
+    };
+
+    const handleOpen = (session: HanSession) => {
+        if (sessionSaved || isSessionBlank(draft)) {
+            openSession(session);
+            return;
+        }
+        setPendingOpen(session);
+        (document.getElementById(OVERWRITE_ID) as HTMLDialogElement | null)?.showModal();
     };
 
     const handleDelete = () => {
@@ -151,6 +167,46 @@ export const MudmueHanHistory = () => {
                     <b>{ordered.length} บิล</b>
                 </HanTotalLine>
             )}
+
+            <dialog id={OVERWRITE_ID} className="modal">
+                <div className="modal-box w-11/12 max-w-md" style={{ background: chok.surface }}>
+                    <ModalBox>
+                        <h3>เปิดบิลนี้ทับของที่กรอกค้างไว้?</h3>
+                        <span>
+                            บิลที่กำลังกรอกอยู่ตอนนี้ยังไม่ได้บันทึกลงประวัติ — เปิดบิลเก่าขึ้นมาแล้ว
+                            สิ่งที่กรอกค้างไว้จะหายทั้งหมด
+                        </span>
+                        <ModalActions>
+                            <ChokButton
+                                type="button"
+                                $tone="neutral"
+                                onClick={() => {
+                                    setPendingOpen(null);
+                                    (
+                                        document.getElementById(OVERWRITE_ID) as HTMLDialogElement | null
+                                    )?.close();
+                                }}
+                            >
+                                ยกเลิก
+                            </ChokButton>
+                            <ChokButton
+                                type="button"
+                                $tone="danger"
+                                onClick={() => {
+                                    const target = pendingOpen;
+                                    setPendingOpen(null);
+                                    (
+                                        document.getElementById(OVERWRITE_ID) as HTMLDialogElement | null
+                                    )?.close();
+                                    if (target) openSession(target);
+                                }}
+                            >
+                                เปิดทับเลย
+                            </ChokButton>
+                        </ModalActions>
+                    </ModalBox>
+                </div>
+            </dialog>
 
             <dialog id={CONFIRM_ID} className="modal">
                 <div className="modal-box w-11/12 max-w-md" style={{ background: chok.surface }}>

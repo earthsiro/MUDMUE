@@ -69,10 +69,20 @@ export const DraftProvider = ({ children }: { children: ReactNode }) => {
         [characters]
     );
 
+    /**
+     * ทิ้งแมตช์ปัจจุบัน — เก็บเข้าประวัติให้ก่อนถ้าเล่นไปแล้วจริง
+     *
+     * ปุ่ม "บันทึกลงประวัติ" โผล่เฉพาะใน Match Summary ของเฟส done แมตช์ที่แข่งจบ
+     * แล้วแต่ยังไม่ได้กดปุ่มนั้น กด New Match ทับทีเดียวหายถาวร — archive ซ้ำได้อยู่แล้ว
+     * เพราะ `archiveMatch` เขียนทับรายการที่ matchId เดียวกัน
+     */
     const resetMatch = useCallback(() => {
+        if (match && (match.phaseHistory.length > 0 || match.battleLog.length > 0)) {
+            archiveMatch(match);
+        }
         setUndoSnapshot(null);
         setMatch(null);
-    }, []);
+    }, [match]);
 
     const archiveCurrentMatch = useCallback(() => {
         setMatch((current) => {
