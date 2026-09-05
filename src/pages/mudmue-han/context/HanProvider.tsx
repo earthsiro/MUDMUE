@@ -28,6 +28,7 @@ export const HanProvider = ({ children }: { children: ReactNode }) => {
     const [profiles, setProfiles] = useState<PlayerProfile[]>(() => loadProfiles());
     const [settings, setSettings] = useState<HanSettings>(() => loadHanSettings());
     const [pickedTierId, setPickedTierId] = useState<string | null>(null);
+    const [dragOverCourtId, setDragOverCourtId] = useState<string | null>(null);
     /** บอกว่าบิลใบนี้เข้าประวัติไปแล้ว — ใช้เปลี่ยนคำบนปุ่มบันทึก */
     const [sessionSaved, setSessionSaved] = useState(false);
 
@@ -298,6 +299,8 @@ export const HanProvider = ({ children }: { children: ReactNode }) => {
             detachTierAt,
             pickedTierId,
             setPickedTierId,
+            dragOverCourtId,
+            setDragOverCourtId,
             addShuttle,
             updateShuttle,
             removeShuttle,
@@ -326,6 +329,7 @@ export const HanProvider = ({ children }: { children: ReactNode }) => {
             attachTier,
             detachTierAt,
             pickedTierId,
+            dragOverCourtId,
             addShuttle,
             updateShuttle,
             removeShuttle,
