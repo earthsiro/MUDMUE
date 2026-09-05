@@ -18,6 +18,23 @@ export interface RateTier {
     hours: number;
 }
 
+/**
+ * ลูกแบดหนึ่งยี่ห้อที่ใช้ในก๊วนนั้น — หนึ่งก๊วนใช้หลายยี่ห้อพร้อมกันได้
+ *
+ * ราคาที่คนซื้อจำได้คือ "ราคาต่อหลอด" ไม่ใช่ราคาต่อลูก ที่นี่จึงเก็บราคาต่อหลอด
+ * คู่กับจำนวนลูกต่อหลอด แล้วหารเอาเป็นราคาต่อลูกตอนคำนวณ (`shuttlePricePerPiece`)
+ */
+export interface ShuttleBrand {
+    id: string;
+    /** ยี่ห้อ/รุ่น เช่น "RSL Classic" — ปล่อยว่างได้ ใช้เรียกว่า "ลูกแบด" แทน */
+    name: string;
+    pricePerTube: number;
+    /** หลอดมาตรฐาน 12 ลูก แต่แก้ได้ เผื่อหลอด 6 ลูกหรือซื้อยกโหล */
+    piecesPerTube: number;
+    /** จำนวนลูกของยี่ห้อนี้ที่ใช้ไปจริง */
+    usedCount: number;
+}
+
 export interface HanCourt {
     id: string;
     /** ลำดับที่แสดงผล (คอร์ท 1, 2, ...) */
@@ -31,7 +48,7 @@ export interface AttendeeEntry {
     /** ชื่อ ณ ตอนบันทึก — กันประวัติกลายเป็นชื่อว่างเมื่อโปรไฟล์ถูกแก้ */
     name: string;
     /* ชั่วโมงรายคน (มาสาย/กลับก่อน) ยกไป phase 2 — เฟสนี้ทุกคนอยู่ครบทั้งก๊วน */
-    /** จำนวนลูกที่ร่วมหาร — null = ร่วมหารครบทุกลูก (ใช้ shuttleUsedCount) */
+    /** จำนวนลูกที่ร่วมหาร — null = ร่วมหารครบทุกลูกของวันนั้น (รวมทุกยี่ห้อ) */
     shuttleCount: number | null;
 }
 
@@ -43,9 +60,8 @@ export interface HanSession {
     title: string;
     tiers: RateTier[];
     courts: HanCourt[];
-    shuttlePricePerPiece: number;
-    /** ยอดรวมลูกที่ใช้จริงทั้งวัน */
-    shuttleUsedCount: number;
+    /** ลูกแบดที่ใช้วันนั้น แยกตามยี่ห้อ — ยี่ห้อเดียวก็คือลิสต์ที่มีสมาชิกตัวเดียว */
+    shuttles: ShuttleBrand[];
     attendees: AttendeeEntry[];
     /** ISO string — ใส่ตอนกดบันทึกเข้าประวัติ */
     savedAt?: string;
@@ -73,6 +89,10 @@ export interface PersonBreakdown {
 
 export interface HanCalcResult {
     courtCostById: Record<string, number>;
+    /** ยอดของลูกแต่ละยี่ห้อ = ราคาต่อลูก × จำนวนที่ใช้ของยี่ห้อนั้น */
+    shuttleCostById: Record<string, number>;
+    /** จำนวนลูกที่ใช้จริงทั้งวัน รวมทุกยี่ห้อ — ค่าเริ่มต้นของ "ลูกที่ร่วมหาร" ของทุกคน */
+    shuttleUsedTotal: number;
     /** ชั่วโมงที่แต่ละคอร์ทถูกจอง — ผลรวมชั่วโมงของป้ายที่แปะบนคอร์ทนั้น */
     courtHoursById: Record<string, number>;
     courtSubtotal: number;

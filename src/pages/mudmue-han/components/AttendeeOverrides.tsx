@@ -186,7 +186,7 @@ export const AttendeeOverrides = () => {
                                 label="จำนวนลูก"
                                 personName={attendee.name}
                                 value={attendee.shuttleCount}
-                                fallback={session.shuttleUsedCount}
+                                fallback={result.shuttleUsedTotal}
                                 suffix="ลูก"
                                 onChange={(value) => setAttendeeShuttle(attendee.profileUuid, value)}
                             />

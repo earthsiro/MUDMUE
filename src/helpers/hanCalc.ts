@@ -1,4 +1,12 @@
-import { AttendeeEntry, HanCalcResult, HanCourt, HanSession, PersonBreakdown, RateTier } from "../types/han";
+import {
+    AttendeeEntry,
+    HanCalcResult,
+    HanCourt,
+    HanSession,
+    PersonBreakdown,
+    RateTier,
+    ShuttleBrand,
+} from "../types/han";
 
 /**
  * เครื่องคิดเลขของ MUDMUE Han — pure functions ล้วน ไม่แตะ localStorage และไม่รู้จัก React
@@ -42,9 +50,26 @@ export const sessionDurationHours = (tiers: RateTier[], courts: HanCourt[]): num
         ? courts.reduce((max, court) => Math.max(max, courtHours(court, tiers)), 0)
         : tiers.reduce((sum, tier) => sum + tier.hours, 0);
 
+/**
+ * ราคาต่อลูกของยี่ห้อหนึ่ง = ราคาต่อหลอด ÷ จำนวนลูกต่อหลอด
+ *
+ * ยังไม่ได้ใส่จำนวนลูกต่อหลอด (0) ก็คืน 0 ไม่ใช่ Infinity — ค่ายังกรอกไม่ครบ
+ * ไม่ควรทำให้ยอดทั้งบิลกลายเป็น NaN
+ */
+export const shuttlePricePerPiece = (brand: ShuttleBrand): number =>
+    brand.piecesPerTube > 0 ? brand.pricePerTube / brand.piecesPerTube : 0;
+
+/** ยอดของลูกยี่ห้อหนึ่ง = ราคาต่อลูก × จำนวนที่ใช้ของยี่ห้อนั้น */
+export const shuttleBrandCost = (brand: ShuttleBrand): number =>
+    shuttlePricePerPiece(brand) * brand.usedCount;
+
+/** จำนวนลูกที่ใช้จริงทั้งวัน รวมทุกยี่ห้อ */
+export const totalShuttlesUsed = (shuttles: ShuttleBrand[]): number =>
+    shuttles.reduce((sum, brand) => sum + brand.usedCount, 0);
+
 /** จำนวนลูกที่ใช้คิดจริงของคนหนึ่งคน — null = ร่วมหารลูกทั้งหมดของวันนั้น */
-export const effectiveShuttles = (attendee: AttendeeEntry, shuttleUsedCount: number): number =>
-    attendee.shuttleCount ?? shuttleUsedCount;
+export const effectiveShuttles = (attendee: AttendeeEntry, shuttleUsedTotal: number): number =>
+    attendee.shuttleCount ?? shuttleUsedTotal;
 
 const formatNumber = (value: number): string => {
     const rounded = Math.round(value * 100) / 100;
@@ -58,7 +83,7 @@ export const formatBaht = (value: number): string => `฿${formatNumber(value)}`
 export const formatShuttle = (value: number): string => formatNumber(value);
 
 export const calculateSession = (session: HanSession): HanCalcResult => {
-    const { tiers, courts, attendees, shuttlePricePerPiece, shuttleUsedCount } = session;
+    const { tiers, courts, attendees, shuttles } = session;
 
     /* ---- ค่าคอร์ท: คิดแยกทีละคอร์ทจากป้ายที่แปะอยู่บนคอร์ทนั้น แล้วค่อยรวม ---- */
     const courtCostById: Record<string, number> = {};
@@ -69,17 +94,34 @@ export const calculateSession = (session: HanSession): HanCalcResult => {
     });
     const courtSubtotal = courts.reduce((sum, court) => sum + courtCostById[court.id], 0);
 
-    /* ---- ค่าลูก ---- */
-    const shuttleSubtotal = shuttlePricePerPiece * shuttleUsedCount;
+    /* ---- ค่าลูก: คิดแยกทีละยี่ห้อ (ราคาต่อหลอดของแต่ละยี่ห้อไม่เท่ากัน) แล้วค่อยรวม ---- */
+    const shuttleCostById: Record<string, number> = {};
+    shuttles.forEach((brand) => {
+        shuttleCostById[brand.id] = shuttleBrandCost(brand);
+    });
+    const shuttleSubtotal = shuttles.reduce((sum, brand) => sum + shuttleCostById[brand.id], 0);
+    const shuttleUsedTotal = totalShuttlesUsed(shuttles);
     const grandTotal = courtSubtotal + shuttleSubtotal;
 
     const durationHours = sessionDurationHours(tiers, courts);
     const warnings: string[] = [];
 
+    /* ใช้ลูกไปแล้วแต่ยังไม่บอกว่าหลอดหนึ่งมีกี่ลูก = หารไม่ได้ ยอดยี่ห้อนั้นเลยเป็น 0 เงียบ ๆ */
+    const missingPieces = shuttles.filter((brand) => brand.usedCount > 0 && brand.piecesPerTube <= 0);
+    if (missingPieces.length > 0) {
+        warnings.push(
+            `${missingPieces
+                .map((brand) => brand.name.trim() || "ลูกแบดที่ยังไม่ได้ตั้งชื่อ")
+                .join(", ")} ยังไม่ได้ใส่จำนวนลูกต่อหลอด — ยังคิดราคาต่อลูกไม่ได้`
+        );
+    }
+
     if (attendees.length === 0) {
         return {
             courtCostById,
             courtHoursById,
+            shuttleCostById,
+            shuttleUsedTotal,
             courtSubtotal,
             shuttleSubtotal,
             grandTotal,
@@ -88,7 +130,7 @@ export const calculateSession = (session: HanSession): HanCalcResult => {
             people: [],
             collectedTotal: 0,
             roundingDiff: -grandTotal,
-            warnings: grandTotal > 0 ? ["ยังไม่ได้เลือกคนที่มาวันนี้ — ยอดยังหารไม่ได้"] : [],
+            warnings: grandTotal > 0 ? [...warnings, "ยังไม่ได้เลือกคนที่มาวันนี้ — ยอดยังหารไม่ได้"] : warnings,
         };
     }
 
@@ -100,15 +142,15 @@ export const calculateSession = (session: HanSession): HanCalcResult => {
     /* ---- ส่วนแบ่งค่าลูก: ตามสัดส่วนจำนวนลูกที่ร่วมหาร ----
        ค่าเริ่มต้นของทุกคนคือ "ร่วมหารครบทุกลูก" ยอดจึงเท่ากันทุกคนตามปกติ
        คนที่ตีน้อยกว่าคนอื่นค่อยลดเลขของตัวเองลง ที่เหลือจะไปเฉลี่ยกันเองอัตโนมัติ */
-    const totalShuttleShares = attendees.reduce((sum, a) => sum + effectiveShuttles(a, shuttleUsedCount), 0);
+    const totalShuttleShares = attendees.reduce((sum, a) => sum + effectiveShuttles(a, shuttleUsedTotal), 0);
     if (totalShuttleShares <= 0 && shuttleSubtotal > 0) {
         warnings.push("จำนวนลูกของทุกคนรวมกันเป็น 0 — ค่าลูกยังแบ่งให้ใครไม่ได้");
     }
-    const overShuttle = attendees.filter((a) => a.shuttleCount !== null && a.shuttleCount > shuttleUsedCount);
-    if (overShuttle.length > 0 && shuttleUsedCount > 0) {
+    const overShuttle = attendees.filter((a) => a.shuttleCount !== null && a.shuttleCount > shuttleUsedTotal);
+    if (overShuttle.length > 0 && shuttleUsedTotal > 0) {
         warnings.push(
             `${overShuttle.map((a) => a.name).join(", ")} ใส่จำนวนลูกมากกว่าที่ใช้จริงทั้งวัน (${formatNumber(
-                shuttleUsedCount
+                shuttleUsedTotal
             )} ลูก)`
         );
     }
@@ -116,7 +158,7 @@ export const calculateSession = (session: HanSession): HanCalcResult => {
     /* ---- ยอดต่อคน ---- */
     const people: PersonBreakdown[] = attendees.map((attendee) => {
         const courtShare = courtSharePerHead;
-        const shuttleCount = effectiveShuttles(attendee, shuttleUsedCount);
+        const shuttleCount = effectiveShuttles(attendee, shuttleUsedTotal);
         const shuttleCost =
             totalShuttleShares > 0 ? (shuttleCount / totalShuttleShares) * shuttleSubtotal : 0;
         const rawTotal = courtShare + shuttleCost;
@@ -138,6 +180,8 @@ export const calculateSession = (session: HanSession): HanCalcResult => {
     return {
         courtCostById,
         courtHoursById,
+        shuttleCostById,
+        shuttleUsedTotal,
         courtSubtotal,
         shuttleSubtotal,
         grandTotal,

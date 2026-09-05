@@ -4,8 +4,8 @@ import { IconClock } from "../../../components/icons";
 import { breakpoints } from "../../../styles/breakpoints";
 import { formatBaht } from "../../../helpers/hanCalc";
 import styled from "styled-components";
+import { useDraftNumber } from "./useDraftNumber";
 import { useHan } from "../context/hanContext";
-import { useState } from "react";
 
 /**
  * "การ์ด ชม." — ป้ายราคาแยกชิ้นที่ยังไม่ผูกกับคอร์ทใด สร้างไว้ก่อนแล้วค่อยเอาไปแปะ
@@ -259,25 +259,6 @@ const AddTier = styled.button`
         outline-offset: 2px;
     }
 `;
-
-/** ค่าที่พิมพ์ค้างไว้ระหว่างโฟกัส เก็บเป็น string ให้ลบจนว่างได้โดยไม่เด้งเป็น 0 */
-const useDraftNumber = (commit: (value: number) => void) => {
-    const [draft, setDraft] = useState<string | null>(null);
-
-    return {
-        draft,
-        onChange: (raw: string) => {
-            setDraft(raw);
-            if (raw === "") return;
-            const parsed = Number(raw);
-            if (Number.isFinite(parsed)) commit(Math.max(0, parsed));
-        },
-        onBlur: () => {
-            if (draft !== null && (draft === "" || !Number.isFinite(Number(draft)))) commit(0);
-            setDraft(null);
-        },
-    };
-};
 
 const TierRow = ({ tierId }: { tierId: string }) => {
     const { session, updateTier, removeTier, pickedTierId, setPickedTierId } = useHan();
